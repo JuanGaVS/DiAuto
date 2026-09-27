@@ -161,7 +161,8 @@ android {
         }
 
         getByName("debug") {
-            // debugging setup
+            applicationIdSuffix = ".bydhudtest"
+            versionNameSuffix = "-hud-test"
         }
     }
 

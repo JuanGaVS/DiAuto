@@ -658,6 +658,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                         var deliveryBssid = bssid
                         var fromInterface = bssidFromInterface
                         var retries = 0
+                        val resolutionStarted = android.os.SystemClock.elapsedRealtime()
                         fun needsBssid() = !isBssidSet && isOwner &&
                             (deliveryBssid == "00:00:00:00:00:00" || deliveryBssid == "02:00:00:00:00:00")
                         // IPv6 can arrive after group info / IPv4. Wait within the existing
@@ -686,11 +687,18 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                                     handler.post { if (deliveryEpoch == credentialsEpoch) lastKnownBssid = it }
                                 }
                             }
-                            if (ip != null && !needsBssid()) break
+                            if (P2pCredentialWaitPolicy.ready(
+                                    ipReady = ip != null, owner = isOwner, staticOverride = isBssidSet,
+                                    fromCurrentInterface = fromInterface, maskedBssid = needsBssid(),
+                                    elapsedMillis = android.os.SystemClock.elapsedRealtime() - resolutionStarted,
+                                )) break
                             AppLog.d("WifiDirectManager: Waiting for IP/BSSID on interface ${groupIface ?: "any p2p"} (Attempt ${retries + 1}/15)...")
                             Thread.sleep(1000)
                             ip = getWifiDirectIp(groupIface)
                             retries++
+                        }
+                        if (!isBssidSet && isOwner && !fromInterface && !needsBssid() && deliveryEpoch == credentialsEpoch) {
+                            AppLog.w("WifiDirectManager: current-interface BSSID unavailable after bounded wait; using fallback BSSID")
                         }
                         if (needsBssid() && deliveryEpoch == credentialsEpoch) {
                             // Named here because the handshake abort that follows can only guess at
