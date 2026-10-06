@@ -54,6 +54,8 @@ class BydPanelTestActivity : Activity() {
         button("   Terminar navegación") { endGuidance("manual") }
         button("5. Buscar receptores de mapas (no escribe nada)") { findMapReceivers() }
         button("6. Probar flecha vía servicio de mapas (15 s)") { startAmapDemo() }
+        button("   6a. Solo com.example.amapservice") { startAmapDemo(listOf("com.example.amapservice")) }
+        button("   6b. Solo com.byd.automap") { startAmapDemo(listOf("com.byd.automap")) }
         button("   Limpiar flecha del servicio de mapas") { endAmap("manual") }
         button("7. Inspeccionar servicios de mapas (no escribe nada)") { Thread { inspectMapServices() }.start() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
@@ -187,9 +189,9 @@ class BydPanelTestActivity : Activity() {
 
     private fun installed(pkg: String) = runCatching { packageManager.getPackageInfo(pkg, 0) }.isSuccess
 
-    private fun startAmapDemo() {
+    private fun startAmapDemo(only: List<String>? = null) {
         if (amapRunning) { report("La prueba del servicio de mapas ya está corriendo."); return }
-        amapTargets = findMapReceivers()
+        amapTargets = only?.filter { installed(it) }?.also { report("Destino único: ${it.joinToString()}") } ?: findMapReceivers()
         if (amapTargets.isEmpty()) return
         amapRunning = true
         val started = System.currentTimeMillis()

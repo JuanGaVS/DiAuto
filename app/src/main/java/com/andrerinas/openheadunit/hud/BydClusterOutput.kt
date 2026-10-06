@@ -3,11 +3,21 @@ package com.andrerinas.openheadunit.hud
 import android.content.Context
 import android.content.Intent
 
-internal class BydClusterOutput(private val context: Context) {
+/**
+ * AutoNavi standard broadcast to the stock map service that feeds the cluster/HUD.
+ * DiLink 5 ships it as com.byd.amapservice; DiLink 3.0 (Android 10) ships the same role as
+ * com.example.amapservice. On a DiLink 3.0 unit the same extras sent to it (together with
+ * com.byd.automap) drew the turn arrow and countdown on the HUD.
+ */
+internal class BydClusterOutput(private val context: Context, private val targetPackage: String = PACKAGES.first()) {
+    companion object {
+        val PACKAGES = listOf("com.byd.amapservice", "com.example.amapservice")
+    }
+
     private var showing = false
     fun update(frame: BydGuidance?) {
         if (frame == null && !showing) return
-        val intent = Intent("AUTONAVI_STANDARD_BROADCAST_SEND").setPackage("com.byd.amapservice")
+        val intent = Intent("AUTONAVI_STANDARD_BROADCAST_SEND").setPackage(targetPackage)
             .addFlags(0x01000000)
             .putExtra("IS_BYD_MAP", true).putExtra("IS_BYD_BAIDU_MAP", false)
         if (frame != null) {
