@@ -57,7 +57,7 @@ class BydPanelTestActivity : Activity() {
         button("   6a. Solo com.example.amapservice") { startAmapDemo(listOf("com.example.amapservice")) }
         button("   6b. Solo com.byd.automap") { startAmapDemo(listOf("com.byd.automap")) }
         button("   Limpiar flecha del servicio de mapas") { endAmap("manual") }
-        button("7. Inspeccionar servicios de mapas (no escribe nada)") { Thread { inspectMapServices() }.start() }
+        button("7. Inspeccionar servicios de mapas y música (no escribe nada)") { Thread { inspectMapServices() }.start() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -252,8 +252,17 @@ class BydPanelTestActivity : Activity() {
      */
     private fun inspectMapServices() {
         val pattern = Regex("^[A-Za-z0-9_.:]{6,80}$")
-        val interesting = Regex("AUTONAVI|NAVI|GUIDE|ICON|KEY_TYPE|REMAIN|ROAD|CLUSTER|INSTRUMENT|HUD|MUSIC|SONG|ACTION|BROADCAST|byd\\.", RegexOption.IGNORE_CASE)
-        for (pkg in AMAP_PACKAGES.filter { installed(it) }) {
+        val interesting = Regex("AUTONAVI|NAVI|GUIDE|ICON|KEY_TYPE|REMAIN|ROAD|CLUSTER|INSTRUMENT|HUD|MUSIC|SONG|ACTION|BROADCAST|META|TITLE|ARTIST|SINGER|ALBUM|LYRIC|PLAY|byd\\.", RegexOption.IGNORE_CASE)
+        // Media side too: the stock players (BYD media center, widgets, online radio/podcast apps)
+        // are what put song names on the cluster, so their action and extra names are the lead.
+        val mediaHints = listOf("ximalaya", "himalaya", "kuwo", "radio", "music", "media")
+        val media = runCatching {
+            packageManager.getInstalledPackages(0).map { it.packageName }
+                .filter { name -> mediaHints.any { name.contains(it, ignoreCase = true) } }
+        }.getOrDefault(emptyList())
+        report("Apps de música/radio encontradas: ${media.joinToString()}")
+        val targets = (AMAP_PACKAGES + MEDIA_PACKAGES + media).distinct().filter { installed(it) }
+        for (pkg in targets) {
             try {
                 val flags = PackageManager.GET_RECEIVERS or PackageManager.GET_SERVICES or PackageManager.GET_PROVIDERS or PackageManager.GET_ACTIVITIES
                 val info = packageManager.getPackageInfo(pkg, flags)
@@ -307,6 +316,7 @@ class BydPanelTestActivity : Activity() {
         const val AMAP_ACTION = "AUTONAVI_STANDARD_BROADCAST_SEND"
         // com.byd.amapservice is what DiLink 5 uses; DiLink 3.0 ships com.example.amapservice.
         val AMAP_PACKAGES = listOf("com.example.amapservice", "com.byd.amapservice", "com.byd.automap")
+        val MEDIA_PACKAGES = listOf("com.byd.mediacenter", "com.byd.widget.mediacenter", "com.byd.musicwidget", "com.byd.kuwowidget")
         // Same values BydFactoryNavigationOutput uses: 2 starts navigation state, 1 ends it.
         const val NAVI_STATUS_START = 2
         const val NAVI_STATUS_END = 1
