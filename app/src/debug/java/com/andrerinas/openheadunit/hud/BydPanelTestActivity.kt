@@ -2,6 +2,7 @@ package com.andrerinas.openheadunit.hud
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -51,6 +52,9 @@ class BydPanelTestActivity : Activity() {
         button("   Borrar canción") { musicName("") }
         button("4. Probar flecha de navegación (15 s)") { startGuidanceDemo() }
         button("   Terminar navegación") { endGuidance("manual") }
+        button("5. Buscar receptores de mapas (no escribe nada)") { findMapReceivers() }
+        button("6. Probar flecha vía servicio de mapas (15 s)") { startAmapDemo() }
+        button("   Limpiar flecha del servicio de mapas") { endAmap("manual") }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -61,6 +65,7 @@ class BydPanelTestActivity : Activity() {
 
     override fun onDestroy() {
         if (guidanceRunning) endGuidance("activity closed")
+        if (amapRunning) endAmap("activity closed")
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
@@ -160,6 +165,83 @@ class BydPanelTestActivity : Activity() {
         }
     }
 
+    // --- AutoNavi standard broadcast path (what BydClusterOutput sends to com.byd.amapservice) ---
+
+    private var amapRunning = false
+    private var amapTargets: List<String> = emptyList()
+
+    /** Packages with a manifest receiver for the AutoNavi action, plus the known service names. */
+    private fun findMapReceivers(): List<String> {
+        val found = try {
+            packageManager.queryBroadcastReceivers(Intent(AMAP_ACTION), 0)
+                .map { "${it.activityInfo.packageName}/${it.activityInfo.name}" }
+        } catch (t: Throwable) {
+            report("Búsqueda de receptores falló: ${describe(t)}"); emptyList()
+        }
+        report("Receptores de $AMAP_ACTION: ${found.ifEmpty { listOf("ninguno declarado") }.joinToString()}")
+        val packages = (found.map { it.substringBefore('/') } + AMAP_PACKAGES.filter { installed(it) }).distinct()
+        report("Destinos de la prueba: ${packages.ifEmpty { listOf("ninguno") }.joinToString()}")
+        return packages
+    }
+
+    private fun installed(pkg: String) = runCatching { packageManager.getPackageInfo(pkg, 0) }.isSuccess
+
+    private fun startAmapDemo() {
+        if (amapRunning) { report("La prueba del servicio de mapas ya está corriendo."); return }
+        amapTargets = findMapReceivers()
+        if (amapTargets.isEmpty()) return
+        amapRunning = true
+        val started = System.currentTimeMillis()
+        val tick = object : Runnable {
+            override fun run() {
+                if (!amapRunning) return
+                val elapsed = System.currentTimeMillis() - started
+                if (elapsed >= 15_000) { endAmap("demo complete"); return }
+                // AutoNavi icons: 2 = turn left, 3 = turn right. Distances count down like a real route.
+                val (icon, distance, road) = if (elapsed < 7_500)
+                    Triple(2, 500 - (elapsed / 50).toInt(), "Calle Prueba DiAuto")
+                else Triple(3, 800 - ((elapsed - 7_500) / 50).toInt(), "Avenida Prueba DiAuto")
+                sendAmap(guidance = true, icon = icon, distance = distance, road = road, log = elapsed < 1_000 || (elapsed in 7_500L..8_499L))
+                handler.postDelayed(this, 1_000)
+            }
+        }
+        handler.post(tick)
+    }
+
+    private fun endAmap(reason: String) {
+        if (!amapRunning && reason != "manual") return
+        amapRunning = false
+        handler.removeCallbacksAndMessages(null)
+        report("Limpiando flecha del servicio de mapas ($reason)")
+        if (amapTargets.isEmpty()) amapTargets = findMapReceivers()
+        sendAmap(guidance = false, icon = -1, distance = -1, road = "", log = true)
+    }
+
+    /** Same extras as BydClusterOutput: KEY_TYPE 10001 carries guidance, 10019 ends it. */
+    private fun sendAmap(guidance: Boolean, icon: Int, distance: Int, road: String, log: Boolean) {
+        for (pkg in amapTargets) {
+            try {
+                val intent = Intent(AMAP_ACTION).setPackage(pkg).addFlags(0x01000000)
+                    .putExtra("IS_BYD_MAP", true).putExtra("IS_BYD_BAIDU_MAP", false)
+                if (guidance) {
+                    intent.putExtra("KEY_TYPE", 10001).putExtra("TYPE", 0).putExtra("EXTRA_STATE", 0)
+                        .putExtra("EXTRA_IS_FOREGROUND", 0).putExtra("NEW_ICON", icon)
+                        .putExtra("ROUNG_ABOUT_NUM", 0).putExtra("SEG_REMAIN_DIS", distance)
+                        .putExtra("NEXT_ROAD_NAME", road).putExtra("ROUTE_REMAIN_DIS", distance + 2_000)
+                        .putExtra("ROUTE_REMAIN_TIME", 300)
+                } else {
+                    intent.putExtra("KEY_TYPE", 10019).putExtra("EXTRA_STATE", 9).putExtra("EXTRA_IS_FOREGROUND", 1)
+                        .putExtra("NEW_ICON", -1).putExtra("SEG_REMAIN_DIS", -1).putExtra("NEXT_ROAD_NAME", "")
+                        .putExtra("ROUTE_REMAIN_DIS", -1).putExtra("ROUTE_REMAIN_TIME", -1)
+                }
+                sendBroadcast(intent)
+                if (log) report("Broadcast a $pkg: ${if (guidance) "icono=$icon distancia=$distance" else "fin de navegación"}")
+            } catch (t: Throwable) {
+                report("Broadcast a $pkg falló: ${describe(t)}")
+            }
+        }
+    }
+
     private fun describe(t: Throwable): String {
         val cause = (t as? InvocationTargetException)?.targetException ?: t
         return "${cause.javaClass.simpleName}: ${cause.message}"
@@ -176,6 +258,9 @@ class BydPanelTestActivity : Activity() {
         const val FEATURE_IDS = "android.hardware.bydauto.BYDAutoFeatureIds"
         const val EVENT_VALUE_CLASS = "android.hardware.bydauto.BYDAutoEventValue"
         const val REQUEST_CODE = 4711
+        const val AMAP_ACTION = "AUTONAVI_STANDARD_BROADCAST_SEND"
+        // com.byd.amapservice is what DiLink 5 uses; DiLink 3.0 ships com.example.amapservice.
+        val AMAP_PACKAGES = listOf("com.example.amapservice", "com.byd.amapservice", "com.byd.automap")
         // Same values BydFactoryNavigationOutput uses: 2 starts navigation state, 1 ends it.
         const val NAVI_STATUS_START = 2
         const val NAVI_STATUS_END = 1
