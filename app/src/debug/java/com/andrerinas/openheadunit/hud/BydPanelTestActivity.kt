@@ -55,6 +55,7 @@ class BydPanelTestActivity : Activity() {
         button("5. Buscar receptores de mapas (no escribe nada)") { findMapReceivers() }
         button("6. Probar flecha vía servicio de mapas (15 s)") { startAmapDemo() }
         button("   Limpiar flecha del servicio de mapas") { endAmap("manual") }
+        button("7. Inspeccionar servicios de mapas (no escribe nada)") { Thread { inspectMapServices() }.start() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -240,6 +241,49 @@ class BydPanelTestActivity : Activity() {
                 report("Broadcast a $pkg falló: ${describe(t)}")
             }
         }
+    }
+
+    /**
+     * Read-only: lists the components of the map services and the intent action / extra names
+     * found in their code, to learn what the cluster listens for on this firmware. The receivers
+     * there are registered at runtime, so the package manager alone cannot show them.
+     */
+    private fun inspectMapServices() {
+        val pattern = Regex("^[A-Za-z0-9_.:]{6,80}$")
+        val interesting = Regex("AUTONAVI|NAVI|GUIDE|ICON|KEY_TYPE|REMAIN|ROAD|CLUSTER|INSTRUMENT|HUD|MUSIC|SONG|ACTION|BROADCAST|byd\\.", RegexOption.IGNORE_CASE)
+        for (pkg in AMAP_PACKAGES.filter { installed(it) }) {
+            try {
+                val flags = PackageManager.GET_RECEIVERS or PackageManager.GET_SERVICES or PackageManager.GET_PROVIDERS or PackageManager.GET_ACTIVITIES
+                val info = packageManager.getPackageInfo(pkg, flags)
+                val apk = info.applicationInfo?.sourceDir
+                report("[$pkg] version=${info.versionName} apk=$apk")
+                info.receivers.orEmpty().forEach { report("  receiver ${it.name} exported=${it.exported} perm=${it.permission}") }
+                info.services.orEmpty().forEach { report("  service ${it.name} exported=${it.exported} perm=${it.permission}") }
+                info.providers.orEmpty().forEach { report("  provider ${it.name} authority=${it.authority} exported=${it.exported}") }
+                info.activities.orEmpty().take(10).forEach { report("  activity ${it.name} exported=${it.exported}") }
+                val strings = sortedSetOf<String>()
+                if (apk == null) { report("  sin ruta de APK"); continue }
+                java.util.zip.ZipFile(apk).use { zip ->
+                    zip.entries().toList().filter { it.name.endsWith(".dex") }.forEach { entry ->
+                        val bytes = zip.getInputStream(entry).readBytes()
+                        val current = StringBuilder()
+                        for (b in bytes) {
+                            val c = b.toInt() and 0xFF
+                            if (c in 0x20..0x7E) current.append(c.toChar()) else {
+                                val text = current.toString()
+                                if (pattern.matches(text) && interesting.containsMatchIn(text)) strings += text
+                                current.setLength(0)
+                            }
+                        }
+                    }
+                }
+                report("  ${strings.size} cadenas relevantes en el código:")
+                strings.take(400).chunked(8).forEach { report("    " + it.joinToString(" | ")) }
+            } catch (t: Throwable) {
+                report("[$pkg] no se pudo inspeccionar: ${describe(t)}")
+            }
+        }
+        report("Inspección terminada.")
     }
 
     private fun describe(t: Throwable): String {
