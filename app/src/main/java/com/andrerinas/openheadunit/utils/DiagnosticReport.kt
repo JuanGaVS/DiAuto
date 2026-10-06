@@ -41,6 +41,10 @@ object DiagnosticReport {
             appendLine("Hotspot name saved=${settings.hotspotSsid.isNotBlank()}; password saved=${settings.hotspotPassword.isNotEmpty()}")
             appendLine("Logging level=${settings.exporterLogLevel}; source=${settings.logSource}")
             appendLine("Saved credentials, network addresses and protocol payloads are omitted.")
+            if (com.andrerinas.openheadunit.hud.BydVehicleProbe.appliesTo()) {
+                appendLine("--- BYD vehicle interfaces (read-only inventory) ---")
+                com.andrerinas.openheadunit.hud.BydVehicleProbe.report(context).forEach { appendLine(it) }
+            }
             appendLine("--- Recent app logs (up to 6000 lines) ---")
             if (lines.isEmpty()) appendLine("No recent app logs available. Reproduce the issue and save a new report.")
             lines.forEach { appendLine(it) }
