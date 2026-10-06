@@ -3,7 +3,8 @@ name: Android CI
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [ main, 'test/**' ]
+  workflow_dispatch:
 
 # Cancel superseded runs on the same ref (e.g. a new push to an open PR).
 concurrency:
