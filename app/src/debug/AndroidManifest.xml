@@ -9,5 +9,11 @@
     <application android:label="DiAuto HUD Test" tools:replace="android:label">
         <receiver android:name="com.andrerinas.openheadunit.hud.HudStatusReceiver" android:exported="true" android:permission="android.permission.DUMP" />
         <activity android:name="com.andrerinas.openheadunit.hud.StandaloneHudDemoActivity" android:exported="true" android:permission="android.permission.DUMP" />
+        <activity android:name="com.andrerinas.openheadunit.hud.BydPanelTestActivity" android:exported="true" android:label="DiAuto Panel Test" android:taskAffinity="${applicationId}.paneltest">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
