@@ -176,7 +176,7 @@ class AapNavigation(
     }
 
     private fun scheduleDebouncedBroadcast(navEventType: Int) {
-        val bydFrame = if (settings.bydNavigationEnabled) com.andrerinas.openheadunit.hud.BydNavigationMapper.from(snapshot) else null
+        val bydFrame = if (settings.bydNavigationEnabled) com.andrerinas.openheadunit.hud.BydNavigationMapper.from(snapshot, settings.rightHandDrive) else null
         AppLog.i("BYD nav input event=$navEventType enabled=${settings.bydNavigationEnabled} " +
             "status=${snapshot.clusterStatus?.payload?.status} steps=${snapshot.navigationState?.payload?.stepsCount} " +
             "legacy=${snapshot.nextTurnDetail?.payload?.nextTurn} position=${snapshot.currentPosition != null} " +
