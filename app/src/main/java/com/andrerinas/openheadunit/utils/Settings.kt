@@ -118,9 +118,10 @@ class Settings(private val context: Context) {
     // Traffic side for BYD cluster/HUD roundabouts. Legacy Android Auto turn events carry the exit
     // number but not the circulation direction, which the cluster needs to show that exit.
     // false = traffic keeps right (counter-clockwise roundabouts), the common case.
-    // Debug only: minor version of the Android Auto protocol advertised in the version request.
+    // Minor version of the Android Auto protocol advertised in the version request: 7 (1.7) by
+    // default, so the phone sends destination and step data; the debug panel can pin 2 (1.2).
     var debugAaProtocolMinor: Int
-        get() = prefs.getInt("debug-aa-protocol-minor", 2)
+        get() = prefs.getInt("debug-aa-protocol-minor", 7)
         set(value) { prefs.edit().putInt("debug-aa-protocol-minor", value).apply() }
 
     var bydLeftHandTraffic: Boolean

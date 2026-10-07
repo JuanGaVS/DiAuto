@@ -604,11 +604,12 @@ class AapTransport(
             }
 
             AppLog.d("Handshake: Starting version request. TS: ${SystemClock.elapsedRealtime()}")
-            // Debug: the phone sends the modern cluster messages (NavigationState / CurrentPosition:
-            // lanes, destination distance and ETA) only from protocol 1.6; at 1.2 it sends the
-            // legacy NextTurn events. Default stays 1.2; a test build can raise it.
-            val protocolMinor = settings.debugAaProtocolMinor
-            val version = if (protocolMinor == 2) Messages.versionRequest else Messages.versionRequest(protocolMinor)
+            // The phone sends the modern cluster messages (NavigationState / CurrentPosition: steps,
+            // destination distance and ETA) only from protocol 1.6; at 1.2 it sends the legacy
+            // NextTurn events. Ask for 1.7 by default; a phone that rejects it is asked again for
+            // 1.2 below, and a test build can pin 1.2.
+            var protocolMinor = settings.debugAaProtocolMinor
+            var version = if (protocolMinor == 2) Messages.versionRequest else Messages.versionRequest(protocolMinor)
             AppLog.i("Handshake: requesting protocol 1.$protocolMinor")
             var ret = -1
             var attempt = 0
@@ -617,6 +618,7 @@ class AapTransport(
             // is worth reporting upwards: it is the one the user can do something about.
             var peerSentBytes = false
             var transportError = false
+            var retryAtFallback = false
             // Outer deadline prevents the loop from running for minutes on an unresponsive device.
             // Each send+recv pair uses 2 s per operation; 3 attempts × 4 s ≈ 12 s worst-case,
             // capped here at HANDSHAKE_TIMEOUT_MS so a stuck device fails fast.
@@ -661,6 +663,13 @@ class AapTransport(
                             val minor = ((buffer[8].toInt() and 0xFF) shl 8) or (buffer[9].toInt() and 0xFF)
                             val status = ((buffer[10].toInt() and 0xFF) shl 8) or (buffer[11].toInt() and 0xFF)
                             AppLog.i("Handshake: phone protocol $major.$minor, status=$status (0 = match)")
+                            if (status != 0 && protocolMinor != 2) {
+                                AppLog.w("Handshake: phone rejected protocol 1.$protocolMinor; asking again for 1.2")
+                                protocolMinor = 2
+                                version = Messages.versionRequest
+                                retryAtFallback = true
+                                break
+                            }
                         }
                         received = true
                         break
@@ -673,6 +682,11 @@ class AapTransport(
                              "Waiting for VERSION_RESPONSE.")
                 }
                 if (received) break
+                if (retryAtFallback) {
+                    retryAtFallback = false
+                    attempt = 0 // The 1.2 request gets its own attempts; this happens at most once.
+                    continue
+                }
                 AppLog.w("Handshake: No VERSION_RESPONSE within 2s (attempt $attempt), ret=$ret")
                 SystemClock.sleep(200)
             }
