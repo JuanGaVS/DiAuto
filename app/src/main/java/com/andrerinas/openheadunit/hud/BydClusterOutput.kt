@@ -11,10 +11,19 @@ import android.content.Intent
  */
 internal class BydClusterOutput(private val context: Context, private val targetPackage: String = PACKAGES.first()) {
     companion object {
-        val PACKAGES = listOf("com.byd.amapservice", "com.example.amapservice")
+        const val DILINK3_PACKAGE = "com.example.amapservice"
+        val PACKAGES = listOf("com.byd.amapservice", DILINK3_PACKAGE)
     }
 
     private var showing = false
+
+    /**
+     * DiLink 3.0's com.example.amapservice renders a distance of exactly 0 as a Chinese "now"
+     * caption on the HUD (seen while waiting at a stop before a turn), and it has no other locale.
+     * Report 1 m there instead; the arrow and the countdown are unchanged.
+     */
+    private fun segmentDistance(meters: Int): Int =
+        if (targetPackage == DILINK3_PACKAGE && meters == 0) 1 else meters
     fun update(frame: BydGuidance?) {
         if (frame == null && !showing) return
         val intent = Intent("AUTONAVI_STANDARD_BROADCAST_SEND").setPackage(targetPackage)
@@ -23,7 +32,7 @@ internal class BydClusterOutput(private val context: Context, private val target
         if (frame != null) {
             intent.putExtra("KEY_TYPE", 10001).putExtra("TYPE", 0).putExtra("EXTRA_STATE", 0)
                 .putExtra("EXTRA_IS_FOREGROUND", 0).putExtra("NEW_ICON", frame.clusterIcon)
-                .putExtra("ROUNG_ABOUT_NUM", frame.roundaboutExit).putExtra("SEG_REMAIN_DIS", frame.distanceMeters)
+                .putExtra("ROUNG_ABOUT_NUM", frame.roundaboutExit).putExtra("SEG_REMAIN_DIS", segmentDistance(frame.distanceMeters))
                 .putExtra("NEXT_ROAD_NAME", frame.road).putExtra("ROUTE_REMAIN_DIS", frame.remainingMeters)
                 .putExtra("ROUTE_REMAIN_TIME", frame.remainingSeconds)
         } else {

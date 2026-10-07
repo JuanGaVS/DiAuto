@@ -56,6 +56,7 @@ class BydPanelTestActivity : Activity() {
         button("6. Probar flecha vía servicio de mapas (15 s)") { startAmapDemo() }
         button("   6a. Solo com.example.amapservice") { startAmapDemo(listOf("com.example.amapservice")) }
         button("   6b. Solo com.byd.automap") { startAmapDemo(listOf("com.byd.automap")) }
+        button("   6c. Flecha a 0 m durante 10 s (ver texto en chino)") { zeroDistanceDemo() }
         button("   Limpiar flecha del servicio de mapas") { endAmap("manual") }
         button("7. Inspeccionar servicios de mapas y música (no escribe nada)") { Thread { inspectMapServices() }.start() }
         button("8. Inspección profunda del media center (no escribe nada)") {
@@ -233,6 +234,25 @@ class BydPanelTestActivity : Activity() {
                     Triple(2, 500 - (elapsed / 50).toInt(), "Calle Prueba DiAuto")
                 else Triple(3, 800 - ((elapsed - 7_500) / 50).toInt(), "Avenida Prueba DiAuto")
                 sendAmap(guidance = true, icon = icon, distance = distance, road = road, log = elapsed < 1_000 || (elapsed in 7_500L..8_499L))
+                handler.postDelayed(this, 1_000)
+            }
+        }
+        handler.post(tick)
+    }
+
+    /** Raw distance 0, bypassing the production clamp, to show what the HUD draws for it. */
+    private fun zeroDistanceDemo() {
+        if (amapRunning) { report("Ya hay una prueba de flecha corriendo."); return }
+        amapTargets = listOf("com.example.amapservice").filter { installed(it) }
+        if (amapTargets.isEmpty()) { report("com.example.amapservice no está instalado"); return }
+        amapRunning = true
+        val started = System.currentTimeMillis()
+        val tick = object : Runnable {
+            override fun run() {
+                if (!amapRunning) return
+                val elapsed = System.currentTimeMillis() - started
+                if (elapsed >= 10_000) { endAmap("demo complete"); return }
+                sendAmap(guidance = true, icon = 2, distance = 0, road = "Calle Prueba DiAuto", log = elapsed < 1_000)
                 handler.postDelayed(this, 1_000)
             }
         }
