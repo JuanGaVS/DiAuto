@@ -58,6 +58,9 @@ class BydPanelTestActivity : Activity() {
         button("   6b. Solo com.byd.automap") { startAmapDemo(listOf("com.byd.automap")) }
         button("   Limpiar flecha del servicio de mapas") { endAmap("manual") }
         button("7. Inspeccionar servicios de mapas y música (no escribe nada)") { Thread { inspectMapServices() }.start() }
+        button("8. Inspección profunda del media center (no escribe nada)") {
+            Thread { listOf("com.byd.mediacenter", "com.byd.widget.mediacenter").forEach { deepScan(it) }; report("Inspección profunda terminada.") }.start()
+        }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -306,6 +309,49 @@ class BydPanelTestActivity : Activity() {
             }
         }
         report("Inspección terminada.")
+    }
+
+    /**
+     * Read-only. Finer than [inspectMapServices] for one package: method/field identifiers, content
+     * URIs and the class descriptors it references (dex keeps those as Lcom/x/Y; with slashes), so we
+     * can see whether the media center itself writes the cluster, and whether it exposes an API that
+     * another app could feed. Nothing is called on the package.
+     */
+    private fun deepScan(pkg: String) {
+        val apk = runCatching { packageManager.getPackageInfo(pkg, 0).applicationInfo?.sourceDir }.getOrNull()
+        if (apk == null) { report("[$pkg] no instalado o sin APK"); return }
+        val hint = Regex("instrument|meter|cluster|musicinfo|musicname|songname|singer|artist|title|setmusic|sendmusic|updatemusic|thirdparty|third_party|externalsource|mediasource|source|playinfo|nowplaying|metadata|bydauto|aidl|stub|provider|api", RegexOption.IGNORE_CASE)
+        val ident = Regex("^[a-z][A-Za-z0-9_]{4,60}$")
+        val descriptor = Regex("^\\[*L(com/byd|android/hardware/bydauto|com/example)[A-Za-z0-9_/\\$]{3,120};$")
+        val idents = sortedSetOf<String>(); val uris = sortedSetOf<String>(); val classes = sortedSetOf<String>()
+        try {
+            java.util.zip.ZipFile(apk).use { zip ->
+                zip.entries().toList().filter { it.name.endsWith(".dex") }.forEach { entry ->
+                    val bytes = zip.getInputStream(entry).readBytes()
+                    val current = StringBuilder()
+                    for (b in bytes) {
+                        val c = b.toInt() and 0xFF
+                        if (c in 0x20..0x7E) { current.append(c.toChar()); continue }
+                        val text = current.toString(); current.setLength(0)
+                        // The ULEB128 length byte before a dex string is often printable; try both.
+                        for (t in listOf(text, text.drop(1))) {
+                            when {
+                                t.startsWith("content://") -> uris += t.take(150)
+                                descriptor.matches(t) && hint.containsMatchIn(t) -> classes += t
+                                descriptor.matches(t) && t.contains("bydauto") -> classes += t
+                                ident.matches(t) && hint.containsMatchIn(t) -> idents += t
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            report("[$pkg] lectura falló: ${describe(t)}"); return
+        }
+        report("[$pkg] profunda: ${classes.size} clases, ${uris.size} URIs, ${idents.size} identificadores")
+        report("  URIs:"); uris.take(60).chunked(4).forEach { report("    " + it.joinToString(" | ")) }
+        report("  Clases:"); classes.take(300).chunked(4).forEach { report("    " + it.joinToString(" | ")) }
+        report("  Identificadores:"); idents.take(500).chunked(8).forEach { report("    " + it.joinToString(" | ")) }
     }
 
     private fun describe(t: Throwable): String {
