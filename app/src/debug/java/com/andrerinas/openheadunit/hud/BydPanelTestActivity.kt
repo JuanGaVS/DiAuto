@@ -62,6 +62,11 @@ class BydPanelTestActivity : Activity() {
         button("8. Inspección profunda del media center (no escribe nada)") {
             Thread { listOf("com.byd.mediacenter", "com.byd.widget.mediacenter").forEach { deepScan(it) }; report("Inspección profunda terminada.") }.start()
         }
+        button("10. Protocolo Android Auto: cambiar 1.2 ↔ 1.7 (próxima conexión)") {
+            val settings = com.andrerinas.openheadunit.utils.Settings(this)
+            settings.debugAaProtocolMinor = if (settings.debugAaProtocolMinor == 2) 7 else 2
+            report("Protocolo para la próxima conexión: 1.${settings.debugAaProtocolMinor}. Cerrá DiAuto HUD Test y reconectá el teléfono.")
+        }
         button("9. Inspeccionar botón de voz del volante (no escribe nada)") {
             Thread {
                 val extra = runCatching {
@@ -81,7 +86,8 @@ class BydPanelTestActivity : Activity() {
         setContentView(ScrollView(this).apply {
             addView(root, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         })
-        report("Paquete ${packageName}, Android ${Build.VERSION.RELEASE}, permiso=${hasPermission()}")
+        report("Paquete ${packageName}, Android ${Build.VERSION.RELEASE}, permiso=${hasPermission()}, " +
+            "protocolo AA=1.${com.andrerinas.openheadunit.utils.Settings(this).debugAaProtocolMinor}")
     }
 
     /** Logs every key that reaches this screen, to learn what the steering-wheel voice button sends. */

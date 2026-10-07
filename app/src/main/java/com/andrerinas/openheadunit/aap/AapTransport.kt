@@ -604,7 +604,12 @@ class AapTransport(
             }
 
             AppLog.d("Handshake: Starting version request. TS: ${SystemClock.elapsedRealtime()}")
-            val version = Messages.versionRequest
+            // Debug: the phone sends the modern cluster messages (NavigationState / CurrentPosition:
+            // lanes, destination distance and ETA) only from protocol 1.6; at 1.2 it sends the
+            // legacy NextTurn events. Default stays 1.2; a test build can raise it.
+            val protocolMinor = settings.debugAaProtocolMinor
+            val version = if (protocolMinor == 2) Messages.versionRequest else Messages.versionRequest(protocolMinor)
+            AppLog.i("Handshake: requesting protocol 1.$protocolMinor")
             var ret = -1
             var attempt = 0
             var received = false
@@ -651,6 +656,12 @@ class AapTransport(
                         && buffer[4] == 0.toByte()
                         && buffer[5] == 2.toByte()) {
                         AppLog.i("Handshake: Version response received (ret=$ret, attempt=$attempt).")
+                        if (ret >= 12) {
+                            val major = ((buffer[6].toInt() and 0xFF) shl 8) or (buffer[7].toInt() and 0xFF)
+                            val minor = ((buffer[8].toInt() and 0xFF) shl 8) or (buffer[9].toInt() and 0xFF)
+                            val status = ((buffer[10].toInt() and 0xFF) shl 8) or (buffer[11].toInt() and 0xFF)
+                            AppLog.i("Handshake: phone protocol $major.$minor, status=$status (0 = match)")
+                        }
                         received = true
                         break
                     }
