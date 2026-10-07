@@ -61,12 +61,37 @@ class BydPanelTestActivity : Activity() {
         button("8. Inspección profunda del media center (no escribe nada)") {
             Thread { listOf("com.byd.mediacenter", "com.byd.widget.mediacenter").forEach { deepScan(it) }; report("Inspección profunda terminada.") }.start()
         }
+        button("9. Inspeccionar botón de voz del volante (no escribe nada)") {
+            Thread {
+                val extra = runCatching {
+                    packageManager.getInstalledPackages(0).map { it.packageName }.filter { name ->
+                        listOf("zlink", "carlink", "autolink", "carplay", "androidauto", "projection", "carlife", "voice", "customkey", "keyevent", "keyservice")
+                            .any { name.contains(it, ignoreCase = true) }
+                    }
+                }.getOrDefault(emptyList())
+                report("Apps de voz/teclas/proyección: ${extra.joinToString()}")
+                (listOf("com.byd.customkey", "com.byd.autovoice", "com.byd.vrassistant") + extra).distinct()
+                    .filter { installed(it) }.forEach { deepScan(it) }
+                report("Inspección del botón de voz terminada.")
+            }.start()
+        }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
             addView(root, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         })
         report("Paquete ${packageName}, Android ${Build.VERSION.RELEASE}, permiso=${hasPermission()}")
+    }
+
+    /** Logs every key that reaches this screen, to learn what the steering-wheel voice button sends. */
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.action == android.view.KeyEvent.ACTION_DOWN || event.action == android.view.KeyEvent.ACTION_UP) {
+            report("Tecla: ${android.view.KeyEvent.keyCodeToString(event.keyCode)} (${event.keyCode}) " +
+                "${if (event.action == android.view.KeyEvent.ACTION_DOWN) "DOWN" else "UP"} repeat=${event.repeatCount} " +
+                "largo=${event.isLongPress} scan=${event.scanCode} fuente=${event.source} dispositivo=${event.deviceId}")
+        }
+        // Back still closes the screen; every other key is only observed.
+        return if (event.keyCode == android.view.KeyEvent.KEYCODE_BACK) super.dispatchKeyEvent(event) else true
     }
 
     override fun onDestroy() {
@@ -320,9 +345,12 @@ class BydPanelTestActivity : Activity() {
     private fun deepScan(pkg: String) {
         val apk = runCatching { packageManager.getPackageInfo(pkg, 0).applicationInfo?.sourceDir }.getOrNull()
         if (apk == null) { report("[$pkg] no instalado o sin APK"); return }
-        val hint = Regex("instrument|meter|cluster|musicinfo|musicname|songname|singer|artist|title|setmusic|sendmusic|updatemusic|thirdparty|third_party|externalsource|mediasource|source|playinfo|nowplaying|metadata|bydauto|aidl|stub|provider|api", RegexOption.IGNORE_CASE)
+        val hint = Regex("longpress|longclick|voice|assistant|wakeup|speech|keycode|keyevent|instrument|meter|cluster|musicinfo|musicname|songname|singer|artist|title|setmusic|sendmusic|updatemusic|thirdparty|third_party|externalsource|mediasource|source|playinfo|nowplaying|metadata|bydauto|aidl|stub|provider|api", RegexOption.IGNORE_CASE)
         val ident = Regex("^[a-z][A-Za-z0-9_]{4,60}$")
         val descriptor = Regex("^\\[*L(com/byd|android/hardware/bydauto|com/example)[A-Za-z0-9_/\\$]{3,120};$")
+        val actionLike = Regex("^[a-z][a-z0-9_]*(\\.[A-Za-z0-9_]+){2,}$")
+        val actionHint = Regex("action|intent|key|voice|vr|assist|speech|long|press|button|wakeup|mic|siri|google|carplay|android_?auto|projection|link", RegexOption.IGNORE_CASE)
+        val actions = sortedSetOf<String>()
         val idents = sortedSetOf<String>(); val uris = sortedSetOf<String>(); val classes = sortedSetOf<String>()
         try {
             java.util.zip.ZipFile(apk).use { zip ->
@@ -337,6 +365,7 @@ class BydPanelTestActivity : Activity() {
                         for (t in listOf(text, text.drop(1))) {
                             when {
                                 t.startsWith("content://") -> uris += t.take(150)
+                                actionLike.matches(t) && actionHint.containsMatchIn(t) && !t.startsWith("android.view") -> actions += t
                                 descriptor.matches(t) && hint.containsMatchIn(t) -> classes += t
                                 descriptor.matches(t) && t.contains("bydauto") -> classes += t
                                 ident.matches(t) && hint.containsMatchIn(t) -> idents += t
@@ -349,6 +378,7 @@ class BydPanelTestActivity : Activity() {
             report("[$pkg] lectura falló: ${describe(t)}"); return
         }
         report("[$pkg] profunda: ${classes.size} clases, ${uris.size} URIs, ${idents.size} identificadores")
+        report("  Acciones/intents (${actions.size}):"); actions.take(300).chunked(3).forEach { report("    " + it.joinToString(" | ")) }
         report("  URIs:"); uris.take(60).chunked(4).forEach { report("    " + it.joinToString(" | ")) }
         report("  Clases:"); classes.take(300).chunked(4).forEach { report("    " + it.joinToString(" | ")) }
         report("  Identificadores:"); idents.take(500).chunked(8).forEach { report("    " + it.joinToString(" | ")) }
