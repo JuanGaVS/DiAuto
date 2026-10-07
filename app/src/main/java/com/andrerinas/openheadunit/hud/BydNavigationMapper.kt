@@ -5,11 +5,11 @@ import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus
 
 internal object BydNavigationMapper {
     /**
-     * @param rightHandDrive the driver-position setting. Legacy turn events carry no circulation
-     * direction for roundabouts, so the car's driving side stands in for it: right-hand-drive cars
-     * are used where traffic keeps left (clockwise roundabouts), left-hand-drive where it keeps right.
+     * @param leftHandTraffic the "traffic keeps left" setting. Legacy turn events carry no
+     * circulation direction for roundabouts, so this setting supplies it: clockwise where traffic
+     * keeps left, counter-clockwise where it keeps right (the default).
      */
-    fun from(snapshot: NavigationSnapshot, rightHandDrive: Boolean = false): BydGuidance? {
+    fun from(snapshot: NavigationSnapshot, leftHandTraffic: Boolean = false): BydGuidance? {
         val status = snapshot.clusterStatus?.payload?.status
         if (status != null && status != NavigationStatus.NavigationClusterStatus.NavigationStatusEnum.ACTIVE) return null
         val step = snapshot.navigationState?.payload?.stepsList?.firstOrNull()
@@ -17,7 +17,7 @@ internal object BydNavigationMapper {
         val legacy = snapshot.nextTurnDetail?.payload
         val modern = step?.takeIf { it.hasManeuver() && it.maneuver.hasType() }?.maneuver
         val type = modern?.type?.number ?: legacy?.takeIf { it.hasNextTurn() }?.let {
-            legacyType(it.nextTurn.number, if (it.hasSide()) it.side.number else 3, it.turnNumber, rightHandDrive)
+            legacyType(it.nextTurn.number, if (it.hasSide()) it.side.number else 3, it.turnNumber, leftHandTraffic)
         } ?: return null
         val codes = codes(type, modern?.roundaboutExitNumber ?: legacy?.turnNumber ?: 0) ?: return null
         val position = snapshot.currentPosition?.payload
@@ -60,7 +60,7 @@ internal object BydNavigationMapper {
         else -> null // Unknown instructions must not become a misleading straight arrow.
     }
 
-    fun legacyType(event: Int, side: Int, roundaboutExit: Int = 0, rightHandDrive: Boolean = false): Int? = when (event) {
+    fun legacyType(event: Int, side: Int, roundaboutExit: Int = 0, leftHandTraffic: Boolean = false): Int? = when (event) {
         1 -> 1
         2 -> 2
         3, 7, 8, 9, 10 -> when(side) { 1 -> 5; 2 -> 6; else -> null }
@@ -70,9 +70,9 @@ internal object BydNavigationMapper {
         11 -> 30
         12 -> 31
         // Legacy turn side does not establish roundabout circulation direction. With an exit
-        // number, take the direction from the driving side so the exit reaches the cluster
+        // number, take the direction from the traffic-side setting so the exit reaches the cluster
         // (enter-and-exit: 32 clockwise, 34 counter-clockwise); without one keep the generic icon.
-        13 -> if (roundaboutExit in 1..10) (if (rightHandDrive) 32 else 34) else 30
+        13 -> if (roundaboutExit in 1..10) (if (leftHandTraffic) 32 else 34) else 30
         14 -> 36
         16 -> 37
         17 -> 38

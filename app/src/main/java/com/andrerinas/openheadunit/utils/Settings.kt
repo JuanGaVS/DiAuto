@@ -115,6 +115,13 @@ class Settings(private val context: Context) {
         get() = prefs.getBoolean("byd-navigation-enabled", false)
         set(value) { prefs.edit().putBoolean("byd-navigation-enabled", value).apply() }
 
+    // Traffic side for BYD cluster/HUD roundabouts. Legacy Android Auto turn events carry the exit
+    // number but not the circulation direction, which the cluster needs to show that exit.
+    // false = traffic keeps right (counter-clockwise roundabouts), the common case.
+    var bydLeftHandTraffic: Boolean
+        get() = prefs.getBoolean("byd-left-hand-traffic", false)
+        set(value) { prefs.edit().putBoolean("byd-left-hand-traffic", value).apply() }
+
     var showNavigationNotifications: Boolean
         get() = prefs.getBoolean("show-navigation-notifications", false)
         set(value) {
