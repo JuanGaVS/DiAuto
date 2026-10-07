@@ -57,6 +57,7 @@ class BydPanelTestActivity : Activity() {
         button("   6a. Solo com.example.amapservice") { startAmapDemo(listOf("com.example.amapservice")) }
         button("   6b. Solo com.byd.automap") { startAmapDemo(listOf("com.byd.automap")) }
         button("   6c. Flecha a 0 m durante 10 s (ver texto en chino)") { zeroDistanceDemo() }
+        button("   6d. Distancias cortas: 1 m, 5 m, 10 m, 20 m y fin de navegación") { shortDistanceDemo() }
         button("   Limpiar flecha del servicio de mapas") { endAmap("manual") }
         button("7. Inspeccionar servicios de mapas y música (no escribe nada)") { Thread { inspectMapServices() }.start() }
         button("8. Inspección profunda del media center (no escribe nada)") {
@@ -259,6 +260,38 @@ class BydPanelTestActivity : Activity() {
                 val elapsed = System.currentTimeMillis() - started
                 if (elapsed >= 10_000) { endAmap("demo complete"); return }
                 sendAmap(guidance = true, icon = 2, distance = 0, road = "Calle Prueba DiAuto", log = elapsed < 1_000)
+                handler.postDelayed(this, 1_000)
+            }
+        }
+        handler.post(tick)
+    }
+
+    /**
+     * Steps through short distances, 6 s each, then the end-of-guidance broadcast, announcing each
+     * stage on screen, to learn which ones the DiLink 3.0 HUD replaces with a Chinese caption.
+     */
+    private fun shortDistanceDemo() {
+        if (amapRunning) { report("Ya hay una prueba de flecha corriendo."); return }
+        amapTargets = listOf("com.example.amapservice").filter { installed(it) }
+        if (amapTargets.isEmpty()) { report("com.example.amapservice no está instalado"); return }
+        amapRunning = true
+        val stages = listOf(1, 5, 10, 20)
+        val started = System.currentTimeMillis()
+        var lastStage = -1
+        val tick = object : Runnable {
+            override fun run() {
+                if (!amapRunning) return
+                val stage = ((System.currentTimeMillis() - started) / 6_000).toInt()
+                if (stage >= stages.size) {
+                    report("Etapa final: mensaje de fin de navegación (mirá el HUD 5 s)")
+                    endAmap("short-distance demo")
+                    return
+                }
+                if (stage != lastStage) {
+                    lastStage = stage
+                    report("Etapa ${stage + 1}: flecha derecha a ${stages[stage]} m (mirá el HUD)")
+                }
+                sendAmap(guidance = true, icon = 3, distance = stages[stage], road = "Calle Prueba DiAuto", log = false)
                 handler.postDelayed(this, 1_000)
             }
         }
