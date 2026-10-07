@@ -13,17 +13,21 @@ internal class BydClusterOutput(private val context: Context, private val target
     companion object {
         const val DILINK3_PACKAGE = "com.example.amapservice"
         val PACKAGES = listOf("com.byd.amapservice", DILINK3_PACKAGE)
+        /** Shortest distance DiLink 3.0's HUD draws as a number (panel test 6d: 1 m and 5 m showed "现在", 10 m did not). */
+        const val DILINK3_MIN_DISTANCE_METERS = 10
     }
 
     private var showing = false
 
     /**
-     * DiLink 3.0's com.example.amapservice renders a distance of exactly 0 as a Chinese "now"
-     * caption on the HUD (seen while waiting at a stop before a turn), and it has no other locale.
-     * Report 1 m there instead; the arrow and the countdown are unchanged.
+     * DiLink 3.0's com.example.amapservice renders a short distance (below 10 m) as a Chinese
+     * "now" caption on the HUD, and it has no other locale. Report 10 m there instead; the arrow
+     * and the countdown are unchanged. A negative (unknown) distance is passed through.
      */
     private fun segmentDistance(meters: Int): Int =
-        if (targetPackage == DILINK3_PACKAGE && meters == 0) 1 else meters
+        if (targetPackage == DILINK3_PACKAGE && meters in 0 until DILINK3_MIN_DISTANCE_METERS) DILINK3_MIN_DISTANCE_METERS
+        else meters
+
     fun update(frame: BydGuidance?) {
         if (frame == null && !showing) return
         val intent = Intent("AUTONAVI_STANDARD_BROADCAST_SEND").setPackage(targetPackage)
