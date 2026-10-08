@@ -950,6 +950,8 @@
     <string name="no_files_found">No se encontraron archivos</string>
     <string name="byd_navigation_title">HUD y cuadro de instrumentos BYD</string>
     <string name="byd_navigation_description">Muestra las indicaciones de Android Auto en pantallas BYD compatibles. Experimental; la compatibilidad varía según el coche.</string>
+    <string name="byd_left_hand_traffic_title">Circulación por la izquierda</string>
+    <string name="byd_left_hand_traffic_description">Las rotondas giran en sentido horario, como en Reino Unido, Japón o Australia. Déjalo desactivado donde se circula por la derecha. Se usa para mostrar el número de salida de las rotondas en las pantallas BYD.</string>
     <string name="da_connection_setup">Configuración de conexión</string>
     <string name="da_connection_setup_hint">Elige una conexión y configura el punto de acceso del coche.</string>
     <string name="da_diagnostics">Diagnóstico</string>

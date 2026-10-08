@@ -82,6 +82,7 @@ class SettingsFragment : Fragment() {
     // Local state to hold changes before saving
     private var pendingUseGps: Boolean? = null
     private var pendingBydNavigationEnabled: Boolean? = null
+    private var pendingBydLeftHandTraffic: Boolean? = null
     private var pendingShowNavigationNotifications: Boolean? = null
     private var pendingSyncMediaSessionAaMetadata: Boolean? = null
     private var pendingResolution: Int? = null
@@ -208,6 +209,7 @@ class SettingsFragment : Fragment() {
         // Initialize local state with current values
         pendingUseGps = settings.useGpsForNavigation
         pendingBydNavigationEnabled = settings.bydNavigationEnabled
+        pendingBydLeftHandTraffic = settings.bydLeftHandTraffic
         pendingShowNavigationNotifications = settings.showNavigationNotifications
         pendingSyncMediaSessionAaMetadata = settings.syncMediaSessionWithAaMetadata
         pendingResolution = settings.resolutionId
@@ -323,6 +325,7 @@ class SettingsFragment : Fragment() {
     private fun reloadPendingStateFromSettings() {
         pendingUseGps = settings.useGpsForNavigation
         pendingBydNavigationEnabled = settings.bydNavigationEnabled
+        pendingBydLeftHandTraffic = settings.bydLeftHandTraffic
         pendingShowNavigationNotifications = settings.showNavigationNotifications
         pendingSyncMediaSessionAaMetadata = settings.syncMediaSessionWithAaMetadata
         pendingResolution = settings.resolutionId
@@ -445,6 +448,7 @@ class SettingsFragment : Fragment() {
 
         pendingUseGps?.let { settings.useGpsForNavigation = it }
         pendingBydNavigationEnabled?.let { settings.bydNavigationEnabled = it }
+        pendingBydLeftHandTraffic?.let { settings.bydLeftHandTraffic = it }
         pendingShowNavigationNotifications?.let { settings.showNavigationNotifications = it }
         pendingSyncMediaSessionAaMetadata?.let { settings.syncMediaSessionWithAaMetadata = it }
         pendingResolution?.let { settings.resolutionId = it }
@@ -568,6 +572,7 @@ class SettingsFragment : Fragment() {
         // Check for any changes
         val anyChange = pendingUseGps != settings.useGpsForNavigation ||
                         pendingBydNavigationEnabled != settings.bydNavigationEnabled ||
+                        pendingBydLeftHandTraffic != settings.bydLeftHandTraffic ||
                         pendingShowNavigationNotifications != settings.showNavigationNotifications ||
                         pendingSyncMediaSessionAaMetadata != settings.syncMediaSessionWithAaMetadata ||
                         pendingResolution != settings.resolutionId ||
@@ -1190,6 +1195,19 @@ class SettingsFragment : Fragment() {
                     updateSettingsList()
                 }
             ))
+            if (pendingBydNavigationEnabled == true) {
+                items.add(SettingItem.ToggleSettingEntry(
+                    stableId = "bydLeftHandTraffic",
+                    nameResId = R.string.byd_left_hand_traffic_title,
+                    descriptionResId = R.string.byd_left_hand_traffic_description,
+                    isChecked = pendingBydLeftHandTraffic ?: false,
+                    onCheckedChanged = { enabled ->
+                        pendingBydLeftHandTraffic = enabled
+                        checkChanges()
+                        updateSettingsList()
+                    }
+                ))
+            }
         }
 
         items.add(SettingItem.ToggleSettingEntry(
