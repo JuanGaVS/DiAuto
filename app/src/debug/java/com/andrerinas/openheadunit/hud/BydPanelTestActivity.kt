@@ -83,6 +83,7 @@ class BydPanelTestActivity : Activity() {
             }.start()
         }
         button("11. Inspeccionar asistente de voz BYD (no escribe nada)") { Thread { inspectVoiceAssistant() }.start() }
+        button("12. Inspeccionar pruebas automáticas del asistente (no escribe nada)") { Thread { inspectVoiceTestHooks() }.start() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -471,8 +472,78 @@ class BydPanelTestActivity : Activity() {
         report("Inspección del asistente de voz terminada.")
     }
 
+    /**
+     * Read-only, second pass after button 11. com.byd.autovoice has an automated-test framework
+     * (com.byd.AUTOMATED_TEST_SR / _TASKS, AutomatedTestAidlInterface, "feed NLP result") behind
+     * the normal-level BYD_AUTO_MATED_TEST permission, and com.byd.vrassistant has "autobatch"
+     * receivers. This lists the related components, every related string in the code, and the
+     * methods and constant values of the related classes, loaded into our own process without
+     * starting, binding or sending anything to the assistant.
+     */
+    private fun inspectVoiceTestHooks() {
+        val hint = Regex("automat|autotest|testtool|test_sr|_sr\\b|feed|autobatch|pcm|thirdapp|third_app|swys|sendtext|settext|textcmd|onnlp|nlpresult|nluresult|asrresult|onresult", RegexOption.IGNORE_CASE)
+        val classHint = Regex("automat|autotest|testtool|swys|thirdapp|autobatch|autorun|neuvoice|navitts|hardkey", RegexOption.IGNORE_CASE)
+        for (pkg in listOf("com.byd.autovoice", "com.byd.vrassistant")) {
+            if (!installed(pkg)) continue
+            val apk = packageManager.getPackageInfo(pkg, 0).applicationInfo?.sourceDir ?: continue
+            try { manifestSummary(pkg, classHint) } catch (t: Throwable) { report("[$pkg] manifiesto: ${describe(t)}") }
+            val strings = sortedSetOf<String>(); val classes = sortedSetOf<String>()
+            val descriptor = Regex("^L(com/byd/[A-Za-z0-9_/\\$]+);$")
+            try {
+                java.util.zip.ZipFile(apk).use { zip ->
+                    zip.entries().toList().filter { it.name.endsWith(".dex") }.forEach { entry ->
+                        zip.getInputStream(entry).buffered(1 shl 16).use { input ->
+                            val current = StringBuilder()
+                            while (true) {
+                                val c = input.read()
+                                if (c in 0x20..0x7E) { if (current.length < 200) current.append(c.toChar()); continue }
+                                val text = current.toString(); current.setLength(0)
+                                for (t in listOf(text, text.drop(1))) {
+                                    if (t.length < 4) continue
+                                    val d = descriptor.matchEntire(t)
+                                    if (d != null) { if (classHint.containsMatchIn(t)) classes += d.groupValues[1].replace('/', '.'); continue }
+                                    if (hint.containsMatchIn(t) && !t.startsWith("android") && !t.startsWith("Landroid")) strings += t.take(160)
+                                }
+                                if (c < 0) break
+                            }
+                        }
+                    }
+                }
+            } catch (t: Throwable) { report("[$pkg] código: ${describe(t)}") }
+            report("  [$pkg] ${strings.size} cadenas de prueba/texto:")
+            strings.take(450).chunked(3).forEach { report("    S " + it.joinToString(" | ")) }
+            report("  [$pkg] ${classes.size} clases relacionadas")
+            val loader = try { dalvik.system.PathClassLoader(apk, ClassLoader.getSystemClassLoader()) } catch (t: Throwable) { report("  cargador: ${describe(t)}"); null } ?: continue
+            for (name in classes.filter { '$' !in it || it.endsWith("\$Stub") || it.endsWith("\$Default") }.take(70)) {
+                try {
+                    val cls = Class.forName(name, false, loader)
+                    val kind = if (cls.isInterface) "interfaz" else if (java.lang.reflect.Modifier.isAbstract(cls.modifiers)) "abstracta" else "clase"
+                    report("  $kind $name extends ${cls.superclass?.name} implements ${cls.interfaces.joinToString { it.name }}")
+                    cls.declaredMethods.take(40).forEach { m ->
+                        report("    m ${m.name}(${m.parameterTypes.joinToString { it.simpleName }}): ${m.returnType.simpleName}")
+                    }
+                    val constants = cls.declaredFields.filter {
+                        java.lang.reflect.Modifier.isStatic(it.modifiers) && java.lang.reflect.Modifier.isFinal(it.modifiers) &&
+                            (it.type == String::class.java || it.type == Int::class.javaPrimitiveType)
+                    }
+                    if (constants.isNotEmpty()) {
+                        // Reading a value runs the class's static initializer, here in our process only.
+                        val values = try {
+                            Class.forName(name, true, loader)
+                            constants.take(80).map { f -> f.isAccessible = true; "${f.name}=${f.get(null)}" }
+                        } catch (t: Throwable) { constants.take(80).map { it.name } + "(valores: ${describe(t)})" }
+                        values.chunked(4).forEach { report("    c " + it.joinToString(" | ")) }
+                    }
+                } catch (t: Throwable) {
+                    report("  $name: ${describe(t)}")
+                }
+            }
+        }
+        report("Inspección de pruebas automáticas terminada.")
+    }
+
     /** Components with their exported flag, guarding permission and intent-filter actions, read from the binary manifest. */
-    private fun manifestSummary(pkg: String) {
+    private fun manifestSummary(pkg: String, only: Regex? = null) {
         val info = packageManager.getPackageInfo(pkg, 0)
         report("[$pkg] versión=${info.versionName} sharedUid=${info.sharedUserId}")
         val parser = createPackageContext(pkg, 0).assets.openXmlResourceParser("AndroidManifest.xml")
@@ -486,7 +557,9 @@ class BydPanelTestActivity : Activity() {
         fun flush() {
             val c = current ?: return
             // Every exported component, and any component that names actions (it may be reachable with a permission we can hold).
-            if ((c.contains("exported=true") || actions.isNotEmpty()) && shown < 120) {
+            val wanted = if (only != null) only.containsMatchIn(c) || actions.any { only.containsMatchIn(it) }
+                else c.contains("exported=true") || actions.isNotEmpty()
+            if (wanted && shown < 120) {
                 report("  $c" + (if (actions.isNotEmpty()) " acciones=${actions.joinToString()}" else "") +
                     (if (categories.isNotEmpty()) " categorías=${categories.joinToString()}" else ""))
                 shown++
