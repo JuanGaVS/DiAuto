@@ -103,6 +103,13 @@ android {
 
     signingConfigs {
         getByName("debug") {
+            // Fork test builds only: one fixed debug key so each CI build installs as an update.
+            rootProject.file("fork-test-debug.keystore").takeIf { it.exists() }?.let {
+                storeFile = it
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
             // storeFile = file("../keystore.jkc")
             // storePassword = property("HEADUNIT_KEYSTORE_PASSWORD") as String
             // keyAlias = property("HEADUNIT_KEYSTORE_ALIAS") as String
