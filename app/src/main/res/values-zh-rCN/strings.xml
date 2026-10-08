@@ -941,6 +941,8 @@
     <string name="no_files_found">未找到文件</string>
     <string name="byd_navigation_title">比亚迪抬头显示和仪表盘</string>
     <string name="byd_navigation_description">在支持的比亚迪显示屏上显示 Android Auto 导航。实验功能；兼容性因车型而异。</string>
+    <string name="byd_left_hand_traffic_title">靠左行驶</string>
+    <string name="byd_left_hand_traffic_description">环岛按顺时针方向行驶，例如英国、日本或澳大利亚。靠右行驶的地区请保持关闭。用于在比亚迪显示屏上显示环岛出口编号。</string>
     <string name="da_connection_setup">连接设置</string>
     <string name="da_connection_setup_hint">选择连接方式并设置车载热点。</string>
     <string name="da_diagnostics">诊断</string>

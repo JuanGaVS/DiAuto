@@ -944,6 +944,8 @@
     <string name="rename_notice_button">Got it</string>
     <string name="byd_navigation_title">BYD HUD and instrument cluster</string>
     <string name="byd_navigation_description">Show Android Auto directions on supported BYD displays. Experimental; vehicle compatibility varies.</string>
+    <string name="byd_left_hand_traffic_title">Traffic drives on the left</string>
+    <string name="byd_left_hand_traffic_description">Roundabouts turn clockwise, as in the UK, Japan or Australia. Leave off where traffic keeps right. Used to show the roundabout exit number on BYD displays.</string>
     <string name="da_connection_setup">Connection setup</string>
     <string name="da_connection_setup_hint">Choose a connection and set up your car hotspot.</string>
     <string name="da_diagnostics">Diagnostics</string>

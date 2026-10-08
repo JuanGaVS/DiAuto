@@ -31,6 +31,16 @@ class BydNavigationMapperTest {
         assertEquals(12, BydNavigationMapper.legacyType(6, 2))
         assertEquals(30, BydNavigationMapper.legacyType(13, 2))
     }
+    @Test fun `legacy roundabout keeps its exit using the traffic side setting`() {
+        // Right-hand traffic (default): counter-clockwise, exit reaches the cluster.
+        assertEquals(34, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 2))
+        assertEquals(BydNavigationMapper.Codes(11, 26, 99, 2), BydNavigationMapper.codes(34, 2))
+        // Left-hand traffic setting: clockwise.
+        assertEquals(32, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 2, leftHandTraffic = true))
+        // No usable exit number: the generic roundabout icon, unchanged.
+        assertEquals(30, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 0))
+        assertEquals(30, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 12))
+    }
     private fun snapshot(distance: Int? = 75): AapNavigationHelper.NavigationSnapshot {
         val step = N.NavigationStep.newBuilder()
             .setManeuver(N.NavigationManeuver.newBuilder().setType(N.NavigationManeuver.NavigationType.TURN_NORMAL_LEFT))

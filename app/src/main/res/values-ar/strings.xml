@@ -940,6 +940,8 @@
     <string name="no_files_found">لم يتم العثور على ملفات</string>
     <string name="byd_navigation_title">شاشة BYD الأمامية ولوحة العدادات</string>
     <string name="byd_navigation_description">عرض إرشادات Android Auto على شاشات BYD المدعومة. تجريبي؛ يختلف التوافق حسب السيارة.</string>
+    <string name="byd_left_hand_traffic_title">القيادة على اليسار</string>
+    <string name="byd_left_hand_traffic_description">الدوّارات تسير باتجاه عقارب الساعة، كما في المملكة المتحدة واليابان وأستراليا. اتركه متوقفًا حيث تكون القيادة على اليمين. يُستخدم لعرض رقم مخرج الدوّار على شاشات BYD.</string>
     <string name="da_connection_setup">إعداد الاتصال</string>
     <string name="da_connection_setup_hint">اختر طريقة الاتصال وأعدّ نقطة اتصال سيارتك.</string>
     <string name="da_diagnostics">التشخيص</string>
