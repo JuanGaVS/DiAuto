@@ -16,5 +16,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name="com.andrerinas.openheadunit.hud.VoiceTestToolService" android:exported="true">
+            <intent-filter>
+                <action android:name="com.byd.AUTOMATED_TEST_TASKS" />
+                <action android:name="com.byd.AUTOMATED_TEST_SR" />
+                <action android:name="com.byd.autovoice.automata.AutomatedTestAidlInterface" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

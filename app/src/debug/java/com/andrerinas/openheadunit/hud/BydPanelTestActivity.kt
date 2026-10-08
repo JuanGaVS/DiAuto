@@ -86,6 +86,8 @@ class BydPanelTestActivity : Activity() {
         button("12. Inspeccionar pruebas automáticas del asistente (no escribe nada)") { Thread { inspectVoiceTestHooks() }.start() }
         button("13. Mandar UNA frase de prueba al asistente (solo estacionado)") { Thread { voiceCommandTest() }.start() }
         button("   Soltar servicio del asistente") { releaseVoiceService() }
+        button("14. Hacerse pasar por la herramienta de prueba (solo estacionado)") { Thread { voiceTestToolProbe() }.start() }
+        button("   Dejar de escuchar al asistente") { stopTestToolProbe() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -108,6 +110,7 @@ class BydPanelTestActivity : Activity() {
 
     override fun onDestroy() {
         if (voiceConn != null || voiceReceiver != null) releaseVoiceService()
+        if (probeReceiver != null) stopTestToolProbe()
         if (guidanceRunning) endGuidance("activity closed")
         if (amapRunning) endAmap("activity closed")
         handler.removeCallbacksAndMessages(null)
@@ -716,6 +719,58 @@ class BydPanelTestActivity : Activity() {
         voiceReceiver?.let { runCatching { unregisterReceiver(it) } }
         voiceReceiver = null
         report("Servicio y receptor del asistente soltados.")
+    }
+
+    // ---- Impersonate the factory test tool (button 14) ------------------------------------------
+    @Volatile private var probeReceiver: android.content.BroadcastReceiver? = null
+
+    /**
+     * Parked only. Our VoiceTestToolService is exported for the test actions, so the assistant can
+     * bind to it. We fire the trigger broadcast the factory tool uses (AUTOMATED_TEST_KEY = 0 =
+     * bind service), pointing at our own component, and log whether the assistant binds back and
+     * what it asks for. VoiceTestToolService only ever hands back one harmless Mandarin query.
+     */
+    private fun voiceTestToolProbe() {
+        if (probeReceiver == null) {
+            val filter = android.content.IntentFilter().apply {
+                listOf("com.byd.action.AUTOVOICE_CMD_RESULT", "com.byd.AUTOMATED_TEST_SR",
+                    "com.byd.AUTOMATED_TEST_TASKS", "com.byd.intent.action.AUTOVOICE_STATE").forEach { addAction(it) }
+            }
+            probeReceiver = object : android.content.BroadcastReceiver() {
+                override fun onReceive(c: Context, i: Intent) {
+                    val extras = i.extras?.keySet()?.joinToString { k -> "$k=${runCatching { i.extras?.get(k) }.getOrNull()}" }
+                    report("Broadcast recibido ${i.action}: {$extras}")
+                }
+            }
+            runCatching { registerReceiver(probeReceiver, filter) }
+                .onFailure { report("No se pudo registrar el receptor: ${describe(it)}") }
+        }
+
+        val self = android.content.ComponentName(this, VoiceTestToolService::class.java)
+        report("Servicio de herramienta de prueba expuesto: $self")
+        report("AUTOMATED_TEST_BIND_SERVICE=0, enviando al asistente…")
+        // Fire the trigger a few ways, because the exact extra keys are not known. All carry the
+        // bind-service command (0) and a pointer back to our component.
+        for (action in listOf("com.byd.AUTOMATED_TEST_TASKS", "com.byd.AUTOMATED_TEST_SR")) {
+            val intent = Intent(action).setPackage("com.byd.autovoice")
+                .putExtra("AUTOMATED_TEST_KEY", 0)
+                .putExtra("AUTOMATED_TEST_COMMAND_ID", 0)
+                .putExtra("package", packageName)
+                .putExtra("pkg", packageName)
+                .putExtra("component", self.flattenToString())
+                .putExtra("service", self.flattenToString())
+            runCatching { sendBroadcast(intent) }
+                .onSuccess { report("Broadcast enviado: $action (key=0, componente=${self.flattenToShortString()})") }
+                .onFailure { report("Broadcast $action falló: ${describe(it)}") }
+            Thread.sleep(500)
+        }
+        report("Esperá hasta ~20 s. Si aparece 'TestTool onBind', el asistente se conectó. Luego tocá 'Dejar de escuchar'.")
+    }
+
+    private fun stopTestToolProbe() {
+        probeReceiver?.let { runCatching { unregisterReceiver(it) } }
+        probeReceiver = null
+        report("Dejé de escuchar al asistente.")
     }
 
     private fun describe(t: Throwable): String {
