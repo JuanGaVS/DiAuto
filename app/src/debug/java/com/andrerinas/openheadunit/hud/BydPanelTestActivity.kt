@@ -740,15 +740,30 @@ class BydPanelTestActivity : Activity() {
                 override fun onReceive(c: Context, i: Intent) {
                     val extras = i.extras?.keySet()?.joinToString { k -> "$k=${runCatching { i.extras?.get(k) }.getOrNull()}" }
                     report("Broadcast recibido ${i.action}: {$extras}")
+                    // The assistant just started listening: fire the trigger again while its session is
+                    // active, in case its test receiver only exists during a voice session. Once per session.
+                    if (i.action == "com.byd.intent.action.AUTOVOICE_STATE" && i.getIntExtra("autovoice_state", -1) == 1 && !firedDuringSession) {
+                        firedDuringSession = true
+                        Thread { report("Asistente escuchando: reenviando el aviso ahora."); sendTestToolTrigger() }.start()
+                    }
+                    if (i.action == "com.byd.intent.action.AUTOVOICE_STATE" && i.getIntExtra("autovoice_state", -1) == 0) firedDuringSession = false
                 }
             }
             runCatching { registerReceiver(probeReceiver, filter) }
                 .onFailure { report("No se pudo registrar el receptor: ${describe(it)}") }
         }
 
-        val self = android.content.ComponentName(this, VoiceTestToolService::class.java)
-        report("Servicio de herramienta de prueba expuesto: $self")
+        report("Servicio de herramienta de prueba expuesto: ${android.content.ComponentName(this, VoiceTestToolService::class.java)}")
         report("AUTOMATED_TEST_BIND_SERVICE=0, enviando al asistente…")
+        sendTestToolTrigger()
+        report("Ahora presioná el botón de voz del volante: cuando el asistente empiece a escuchar, el aviso se reenvía solo. " +
+            "Esperá ~20 s después de cada intento. Si aparece 'TestTool onBind', el asistente se conectó. Luego tocá 'Dejar de escuchar'.")
+    }
+
+    @Volatile private var firedDuringSession = false
+
+    private fun sendTestToolTrigger() {
+        val self = android.content.ComponentName(this, VoiceTestToolService::class.java)
         // Fire the trigger a few ways, because the exact extra keys are not known. All carry the
         // bind-service command (0) and a pointer back to our component.
         for (action in listOf("com.byd.AUTOMATED_TEST_TASKS", "com.byd.AUTOMATED_TEST_SR")) {
@@ -764,7 +779,6 @@ class BydPanelTestActivity : Activity() {
                 .onFailure { report("Broadcast $action falló: ${describe(it)}") }
             Thread.sleep(500)
         }
-        report("Esperá hasta ~20 s. Si aparece 'TestTool onBind', el asistente se conectó. Luego tocá 'Dejar de escuchar'.")
     }
 
     private fun stopTestToolProbe() {
