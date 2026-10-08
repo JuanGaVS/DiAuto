@@ -84,6 +84,8 @@ class BydPanelTestActivity : Activity() {
         }
         button("11. Inspeccionar asistente de voz BYD (no escribe nada)") { Thread { inspectVoiceAssistant() }.start() }
         button("12. Inspeccionar pruebas automáticas del asistente (no escribe nada)") { Thread { inspectVoiceTestHooks() }.start() }
+        button("13. Mandar UNA frase de prueba al asistente (solo estacionado)") { Thread { voiceCommandTest() }.start() }
+        button("   Soltar servicio del asistente") { releaseVoiceService() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -105,6 +107,7 @@ class BydPanelTestActivity : Activity() {
     }
 
     override fun onDestroy() {
+        if (voiceConn != null || voiceReceiver != null) releaseVoiceService()
         if (guidanceRunning) endGuidance("activity closed")
         if (amapRunning) endAmap("activity closed")
         handler.removeCallbacksAndMessages(null)
@@ -626,6 +629,93 @@ class BydPanelTestActivity : Activity() {
         actions.take(250).chunked(3).forEach { report("    A " + it.joinToString(" | ")) }
         keys.take(250).chunked(5).forEach { report("    K " + it.joinToString(" | ")) }
         idents.take(300).chunked(8).forEach { report("    I " + it.joinToString(" | ")) }
+    }
+
+    // ---- Voice command test (button 13) ---------------------------------------------------------
+    // One harmless typed phrase to the BYD assistant's automated-test service, parked only. The
+    // assistant's NLU is Mandarin, so the test phrase is the Mandarin for "what time is it" — an
+    // information query with no vehicle action. Everything the assistant sends back is logged.
+    @Volatile private var voiceConn: android.content.ServiceConnection? = null
+    @Volatile private var voiceReceiver: android.content.BroadcastReceiver? = null
+
+    /** A pure-information query; never a vehicle action. Mandarin, because the on-board NLU is Mandarin. */
+    private val TEST_PHRASE = "现在几点"
+
+    private fun voiceCommandTest() {
+        if (voiceConn != null) { report("Ya hay un servicio del asistente conectado. Usá 'Soltar servicio' primero."); return }
+        val pkg = "com.byd.autovoice"
+        if (!installed(pkg)) { report("$pkg no está instalado."); return }
+        val apk = runCatching { packageManager.getPackageInfo(pkg, 0).applicationInfo?.sourceDir }.getOrNull()
+        if (apk == null) { report("Sin ruta de APK para $pkg."); return }
+        val loader = try { dalvik.system.PathClassLoader(apk, classLoader) } catch (t: Throwable) { report("Cargador: ${describe(t)}"); return }
+
+        // Listen for whatever the assistant broadcasts back. Log only.
+        val filter = android.content.IntentFilter().apply {
+            listOf("com.byd.action.AUTOVOICE_CMD_RESULT", "com.byd.AUTOMATED_TEST_SR",
+                "com.byd.AUTOMATED_TEST_TASKS", "com.byd.intent.action.AUTOVOICE_STATE",
+                "com.byd.autovoice.action.AUTOVOICE_WAKEUP_STATE").forEach { addAction(it) }
+        }
+        voiceReceiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                val extras = i.extras?.keySet()?.joinToString { k -> "$k=${runCatching { i.extras?.get(k) }.getOrNull()}" }
+                report("Respuesta broadcast ${i.action}: {$extras}")
+            }
+        }
+        runCatching { registerReceiver(voiceReceiver, filter) }
+            .onFailure { report("No se pudo registrar el receptor: ${describe(it)}") }
+
+        val conn = object : android.content.ServiceConnection {
+            override fun onServiceConnected(name: android.content.ComponentName, binder: android.os.IBinder) {
+                report("Servicio conectado: $name, descriptor binder=${runCatching { binder.interfaceDescriptor }.getOrNull()}")
+                try {
+                    val stub = Class.forName("com.byd.autovoice.automata.AutomatedTestAidlInterface\$Stub", false, loader)
+                    // asInterface = the one static method taking an IBinder and returning the interface.
+                    val asInterface = stub.declaredMethods.firstOrNull {
+                        java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                            it.parameterTypes.size == 1 && it.parameterTypes[0] == android.os.IBinder::class.java
+                    }
+                    if (asInterface == null) { report("No encontré asInterface en el Stub."); return }
+                    val api = asInterface.invoke(null, binder)
+                    val iface = Class.forName("com.byd.autovoice.automata.AutomatedTestAidlInterface", false, loader)
+                    report("API: ${iface.declaredMethods.joinToString { m -> "${m.name}(${m.parameterTypes.joinToString { it.simpleName }}):${m.returnType.simpleName}" }}")
+
+                    // Safe no-arg String getter first (status/version), if present.
+                    iface.declaredMethods.firstOrNull { it.parameterTypes.isEmpty() && it.returnType == String::class.java }
+                        ?.let { m -> report("  ${m.name}() = ${runCatching { m.invoke(api) }.getOrElse { e -> "error: ${describe(e)}" }}") }
+
+                    // The text-command method: one int + one String. Parked, harmless phrase, logged.
+                    val textMethod = iface.declaredMethods.firstOrNull {
+                        it.parameterTypes.size == 2 && it.parameterTypes[0] == Int::class.javaPrimitiveType && it.parameterTypes[1] == String::class.java
+                    }
+                    if (textMethod == null) { report("No hay método (int, String) en la API."); return }
+                    report("Enviando frase de prueba «$TEST_PHRASE» por ${textMethod.name}(int, String), probando varios ids…")
+                    // The int selects the command/operation; its meaning is unknown, so try a few
+                    // and log each result. All are the same harmless phrase.
+                    for (id in listOf(0, 13, 15, 17)) {
+                        val r = runCatching { textMethod.invoke(api, id, TEST_PHRASE) }
+                        report("  ${textMethod.name}($id, phrase) -> ${r.getOrElse { e -> "error: ${describe(e)}" } ?: "ok (void)"}")
+                        Thread.sleep(1500)
+                    }
+                    report("Frase enviada. Esperá la respuesta del asistente en pantalla; luego tocá 'Soltar servicio'.")
+                } catch (t: Throwable) {
+                    report("Error al llamar la API: ${describe(t)}")
+                }
+            }
+            override fun onServiceDisconnected(name: android.content.ComponentName) { report("Servicio desconectado: $name") }
+        }
+        voiceConn = conn
+        val intent = Intent().setClassName(pkg, "com.byd.autovoice.testtool.autotest.AutomataTestService")
+        val ok = runCatching { bindService(intent, conn, Context.BIND_AUTO_CREATE) }.getOrElse { report("bindService lanzó: ${describe(it)}"); false }
+        report("bindService(AutomataTestService) = $ok")
+        if (ok != true) { releaseVoiceService() }
+    }
+
+    private fun releaseVoiceService() {
+        voiceConn?.let { runCatching { unbindService(it) }.onFailure { e -> report("unbind: ${describe(e)}") } }
+        voiceConn = null
+        voiceReceiver?.let { runCatching { unregisterReceiver(it) } }
+        voiceReceiver = null
+        report("Servicio y receptor del asistente soltados.")
     }
 
     private fun describe(t: Throwable): String {
