@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.BYDAUTO_INSTRUMENT_COMMON" />
+    <uses-permission android:name="com.android.permission.BYD_AUTO_MATED_TEST" />
 
     <permission android:name="com.andrerinas.openheadunit.permission.NAVIGATION_UPDATE" tools:node="remove" />
     <permission android:name="${applicationId}.permission.NAVIGATION_UPDATE" android:protectionLevel="signature" />

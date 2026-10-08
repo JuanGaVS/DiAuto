@@ -82,6 +82,7 @@ class BydPanelTestActivity : Activity() {
                 report("Inspección del botón de voz terminada.")
             }.start()
         }
+        button("11. Inspeccionar asistente de voz BYD (no escribe nada)") { Thread { inspectVoiceAssistant() }.start() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -443,6 +444,117 @@ class BydPanelTestActivity : Activity() {
         report("  Identificadores:"); idents.take(500).chunked(8).forEach { report("    " + it.joinToString(" | ")) }
     }
 
+    /**
+     * Read-only. Looks for a way to hand the BYD voice assistant a typed command (text instead of
+     * Mandarin speech): each voice package's manifest (components, the permission guarding each one,
+     * intent-filter actions, declared permissions) and the action / extra / method names in its code
+     * that hint at text input, NLU, test hooks or TTS. Nothing is sent, bound or started.
+     */
+    private fun inspectVoiceAssistant() {
+        val hints = listOf("voice", "speech", "vr", "asr", "nlu", "tts", "aispeech", "iflytek", "xiaodi", "assistant", "semantic")
+        val found = runCatching {
+            packageManager.getInstalledPackages(0).map { it.packageName }
+                .filter { name -> hints.any { name.contains(it, ignoreCase = true) } }.take(12)
+        }.getOrDefault(emptyList())
+        val targets = (listOf("com.byd.autovoice", "com.byd.autovoice.aispeech", "com.byd.vrassistant", "com.byd.vrsettings", "com.example.speechcontrol") + found)
+            .distinct().filter { installed(it) }
+        report("Asistente de voz: paquetes ${targets.joinToString()}")
+        // Who declares or uses the "automated test" permission, which is normal (grantable) protection.
+        runCatching {
+            val p = packageManager.getPermissionInfo(TEST_PERMISSION, 0)
+            report("Permiso $TEST_PERMISSION: nivel=${p.protectionLevel} de ${p.packageName}, lo tenemos=${checkSelfPermission(TEST_PERMISSION) == PackageManager.PERMISSION_GRANTED}")
+        }.onFailure { report("Permiso $TEST_PERMISSION: ${describe(it)}") }
+        for (pkg in targets) {
+            try { manifestSummary(pkg) } catch (t: Throwable) { report("[$pkg] manifiesto: ${describe(t)}") }
+            try { voiceStrings(pkg) } catch (t: Throwable) { report("[$pkg] código: ${describe(t)}") }
+        }
+        report("Inspección del asistente de voz terminada.")
+    }
+
+    /** Components with their exported flag, guarding permission and intent-filter actions, read from the binary manifest. */
+    private fun manifestSummary(pkg: String) {
+        val info = packageManager.getPackageInfo(pkg, 0)
+        report("[$pkg] versión=${info.versionName} sharedUid=${info.sharedUserId}")
+        val parser = createPackageContext(pkg, 0).assets.openXmlResourceParser("AndroidManifest.xml")
+        val ns = "http://schemas.android.com/apk/res/android"
+        val components = setOf("activity", "activity-alias", "service", "receiver", "provider")
+        var current: String? = null
+        val actions = mutableListOf<String>()
+        val categories = mutableListOf<String>()
+        val uses = mutableListOf<String>(); val declared = mutableListOf<String>()
+        var shown = 0
+        fun flush() {
+            val c = current ?: return
+            // Every exported component, and any component that names actions (it may be reachable with a permission we can hold).
+            if ((c.contains("exported=true") || actions.isNotEmpty()) && shown < 120) {
+                report("  $c" + (if (actions.isNotEmpty()) " acciones=${actions.joinToString()}" else "") +
+                    (if (categories.isNotEmpty()) " categorías=${categories.joinToString()}" else ""))
+                shown++
+            }
+            current = null; actions.clear(); categories.clear()
+        }
+        while (true) {
+            val event = parser.next()
+            if (event == org.xmlpull.v1.XmlPullParser.END_DOCUMENT) break
+            if (event == org.xmlpull.v1.XmlPullParser.END_TAG && parser.name in components) { flush(); continue }
+            if (event != org.xmlpull.v1.XmlPullParser.START_TAG) continue
+            val name = parser.getAttributeValue(ns, "name")
+            when (parser.name) {
+                in components -> {
+                    flush()
+                    val exported = parser.getAttributeValue(ns, "exported")
+                    val perm = parser.getAttributeValue(ns, "permission")
+                    val authority = parser.getAttributeValue(ns, "authorities")
+                    current = "${parser.name} $name exported=$exported perm=$perm" + (authority?.let { " autoridad=$it" } ?: "")
+                }
+                "action" -> if (current != null && name != null) actions += name
+                "category" -> if (current != null && name != null && !name.endsWith(".DEFAULT")) categories += name
+                "uses-permission" -> if (name != null) uses += name
+                "permission" -> if (name != null) declared += "$name(${parser.getAttributeValue(ns, "protectionLevel")})"
+            }
+        }
+        parser.close()
+        report("  permisos declarados: ${declared.joinToString()}")
+        report("  permisos que usa (BYD/sistema): ${uses.filter { "byd" in it.lowercase() || "INJECT" in it || "SYSTEM" in it }.joinToString()}")
+    }
+
+    /** Dex strings that hint at text commands, NLU, test hooks or TTS. Streams each dex so a large APK cannot exhaust memory. */
+    private fun voiceStrings(pkg: String) {
+        val apk = packageManager.getPackageInfo(pkg, 0).applicationInfo?.sourceDir ?: return
+        val actionLike = Regex("^[a-zA-Z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+){2,}$")
+        val upperKey = Regex("^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$")
+        val ident = Regex("^[a-z][A-Za-z0-9_]{4,60}$")
+        val hint = Regex("text|query|nlu|semantic|asr|tts|speak|mated|autotest|simulat|mock|inject|command|cmd|intent|wakeup|dialog|session|thirdapp|third_app|vui|swys|sendmsg|send_msg|instruction|input", RegexOption.IGNORE_CASE)
+        val noise = Regex("^(android|androidx|kotlin|kotlinx|java|javax|okhttp3|retrofit2|com\\.google|io\\.reactivex|org\\.)|TextView|EditText|TextAppearance|textColor|textSize|textStyle|TEXT_ALIGN|INPUT_METHOD")
+        val actions = sortedSetOf<String>(); val keys = sortedSetOf<String>(); val idents = sortedSetOf<String>()
+        java.util.zip.ZipFile(apk).use { zip ->
+            zip.entries().toList().filter { it.name.endsWith(".dex") }.forEach { entry ->
+                report("  [$pkg] leyendo ${entry.name} (${entry.size / 1024} KB)")
+                zip.getInputStream(entry).buffered(1 shl 16).use { input ->
+                    val current = StringBuilder()
+                    while (true) {
+                        val c = input.read()
+                        if (c in 0x20..0x7E) { if (current.length < 200) current.append(c.toChar()); continue }
+                        val text = current.toString(); current.setLength(0)
+                        for (t in listOf(text, text.drop(1))) {
+                            if (t.length < 6 || noise.containsMatchIn(t) || !hint.containsMatchIn(t)) continue
+                            when {
+                                actionLike.matches(t) -> actions += t
+                                upperKey.matches(t) -> keys += t
+                                ident.matches(t) -> idents += t
+                            }
+                        }
+                        if (c < 0) break
+                    }
+                }
+            }
+        }
+        report("  [$pkg] código: ${actions.size} acciones, ${keys.size} claves, ${idents.size} identificadores")
+        actions.take(250).chunked(3).forEach { report("    A " + it.joinToString(" | ")) }
+        keys.take(250).chunked(5).forEach { report("    K " + it.joinToString(" | ")) }
+        idents.take(300).chunked(8).forEach { report("    I " + it.joinToString(" | ")) }
+    }
+
     private fun describe(t: Throwable): String {
         val cause = (t as? InvocationTargetException)?.targetException ?: t
         return "${cause.javaClass.simpleName}: ${cause.message}"
@@ -455,6 +567,8 @@ class BydPanelTestActivity : Activity() {
 
     private companion object {
         const val PERMISSION = "android.permission.BYDAUTO_INSTRUMENT_COMMON"
+        // Declared by com.byd.autovoice with "normal" protection level, so any app that asks for it gets it.
+        const val TEST_PERMISSION = "com.android.permission.BYD_AUTO_MATED_TEST"
         const val DEVICE_CLASS = "android.hardware.bydauto.instrument.BYDAutoInstrumentDevice"
         const val FEATURE_IDS = "android.hardware.bydauto.BYDAutoFeatureIds"
         const val EVENT_VALUE_CLASS = "android.hardware.bydauto.BYDAutoEventValue"
