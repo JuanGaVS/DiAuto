@@ -89,6 +89,7 @@ class BydPanelTestActivity : Activity() {
         button("14. Hacerse pasar por la herramienta de prueba (solo estacionado)") { Thread { voiceTestToolProbe() }.start() }
         button("   Dejar de escuchar al asistente") { stopTestToolProbe() }
         button("15. Ver permisos BYD de ADB (shell) (no escribe nada)") { Thread { inspectShellPermissions() }.start() }
+        button("16. Probar canción en el cuadro vía ADB local (solo estacionado)") { Thread { clusterSongViaAdb() }.start() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -811,6 +812,44 @@ class BydPanelTestActivity : Activity() {
             }
         }
         report("Inspección de permisos de shell terminada.")
+    }
+
+    // ---- Cluster song via local ADB (button 16) -------------------------------------------------
+    // The app cannot write the dashboard's music card (sendMusicName needs a BYD signature permission,
+    // panel test 3 got "permission deny"). BYD's autoservice reportedly accepts the adb shell user on
+    // DiLink 4/5; this tests DiLink 3.0. DiAuto runs its own tool from its APK under the head unit's
+    // own adb (localhost:5555, approved once), the same approach DiPlay uses. Parked only; writes a
+    // song title, never a vehicle control.
+    private fun clusterSongViaAdb() {
+        val title = "DiAuto prueba"
+        report("Conectando al ADB local del radio (127.0.0.1:5555)…")
+        val adb = com.andrerinas.openheadunit.adb.LocalAdb(com.andrerinas.openheadunit.adb.AdbKeys.load(this))
+        try {
+            // mayAsk = true: the first time, this shows the car's "Allow debugging?" dialog.
+            val access = adb.connect(mayAsk = true)
+            report("Acceso ADB: $access")
+            when (access) {
+                com.andrerinas.openheadunit.adb.LocalAdb.Access.READY -> {}
+                com.andrerinas.openheadunit.adb.LocalAdb.Access.NOT_APPROVED ->
+                    { report("El radio no aprobó la depuración. Aceptá el diálogo del carro y volvé a tocar el botón 16."); return }
+                com.andrerinas.openheadunit.adb.LocalAdb.Access.UNREACHABLE ->
+                    { report("No se pudo abrir el ADB local. Activá 'Depuración por red' (ADB over network) en el radio."); return }
+                com.andrerinas.openheadunit.adb.LocalAdb.Access.UNSUPPORTED ->
+                    { report("El radio usa ADB con TLS (emparejamiento con código), que no es compatible. Hace falta el ADB por red clásico."); return }
+            }
+            val apk = applicationInfo.sourceDir
+            val cls = BydClusterSongProbeTool::class.java.name
+            // Single-quote the title so a space does not split it into two shell arguments.
+            val cmd = "CLASSPATH=$apk app_process /system/bin $cls '$title'"
+            report("Ejecutando la prueba bajo el shell del radio…")
+            val out = adb.shell(cmd, 15_000)
+            report("Resultado: ${out ?: "(sin respuesta)"}")
+            report("Si en el cuadro de instrumentos aparece «$title», la vía funciona en tu DiLink 3.0.")
+        } catch (t: Throwable) {
+            report("Error: ${describe(t)}")
+        } finally {
+            runCatching { adb.close() }
+        }
     }
 
     private fun describe(t: Throwable): String {
