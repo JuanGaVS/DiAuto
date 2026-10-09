@@ -88,6 +88,7 @@ class BydPanelTestActivity : Activity() {
         button("   Soltar servicio del asistente") { releaseVoiceService() }
         button("14. Hacerse pasar por la herramienta de prueba (solo estacionado)") { Thread { voiceTestToolProbe() }.start() }
         button("   Dejar de escuchar al asistente") { stopTestToolProbe() }
+        button("15. Ver permisos BYD de ADB (shell) (no escribe nada)") { Thread { inspectShellPermissions() }.start() }
         output = TextView(this).apply { textSize = 16f; setTextIsSelectable(true) }
         root.addView(output)
         setContentView(ScrollView(this).apply {
@@ -785,6 +786,31 @@ class BydPanelTestActivity : Activity() {
         probeReceiver?.let { runCatching { unregisterReceiver(it) } }
         probeReceiver = null
         report("Dejé de escuchar al asistente.")
+    }
+
+    /**
+     * Read-only. Lists the BYD permissions the ADB shell user (com.android.shell) requests and
+     * whether each is granted, so we can tell whether driving this over ADB would reach anything the
+     * app itself cannot. Reads package metadata only; changes nothing.
+     */
+    private fun inspectShellPermissions() {
+        for (pkg in listOf("com.android.shell", "com.android.settings")) {
+            try {
+                val info = packageManager.getPackageInfo(pkg, PackageManager.GET_PERMISSIONS)
+                val requested = info.requestedPermissions ?: emptyArray()
+                val flags = info.requestedPermissionsFlags ?: IntArray(requested.size)
+                val byd = requested.indices.filter { requested[it].contains("byd", ignoreCase = true) || requested[it].contains("BYDAUTO", ignoreCase = true) }
+                report("[$pkg] ${requested.size} permisos, ${byd.size} de BYD:")
+                byd.forEach {
+                    val granted = (flags.getOrElse(it) { 0 } and android.content.pm.PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0
+                    report("  ${requested[it]} concedido=$granted")
+                }
+                if (byd.isEmpty()) report("  (ninguno)")
+            } catch (t: Throwable) {
+                report("[$pkg] no se pudo leer: ${describe(t)}")
+            }
+        }
+        report("Inspección de permisos de shell terminada.")
     }
 
     private fun describe(t: Throwable): String {
