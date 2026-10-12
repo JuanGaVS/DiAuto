@@ -171,6 +171,19 @@ android {
             applicationIdSuffix = ".bydhudtest"
             versionNameSuffix = "-hud-test"
         }
+
+        // Fork "DiAuto CE" build: production code and the main app only (no src/debug test
+        // screens), named "DiAuto CE" by src/ce, installable next to the official app and the
+        // HUD test build. Signed with the fork's fixed debug key so each CI build updates in place.
+        create("ce") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            applicationIdSuffix = ".ce"
+            versionNameSuffix = "-ce"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
     }
 
     packaging {
@@ -209,7 +222,7 @@ android {
             .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
             .forEach { output ->
                 var outputFileName = "${variant.applicationId}_${variant.versionName}_debug.apk"
-                if(variant.buildType.name == "release") {
+                if(variant.buildType.name == "release" || variant.buildType.name == "ce") {
                     outputFileName = "${variant.applicationId}_${variant.versionName}.apk"
                     output.outputFileName = outputFileName
                 }

@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <!-- Installs next to the official app: a per-package navigation permission instead of the shared one. -->
+    <permission android:name="com.andrerinas.openheadunit.permission.NAVIGATION_UPDATE" tools:node="remove" />
+    <permission android:name="${applicationId}.permission.NAVIGATION_UPDATE" android:protectionLevel="signature" />
+</manifest>

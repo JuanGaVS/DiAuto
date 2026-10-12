@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DiAuto CE build type: the app name in launcher, title bar and notifications. -->
+<resources>
+    <string name="app_name">DiAuto CE</string>
+    <string name="title">DiAuto CE</string>
+</resources>

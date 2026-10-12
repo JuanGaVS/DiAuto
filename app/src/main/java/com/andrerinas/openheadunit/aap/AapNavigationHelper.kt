@@ -82,7 +82,8 @@ class AapNavigationHelper(
             estimatedArrival = prepared.estimatedArrival
         )
         context.applicationContext.sendBroadcast(intent,
-            if (com.andrerinas.openheadunit.BuildConfig.DEBUG)
+            // Debug and CE builds declare their own per-package permission (see their manifests).
+            if (com.andrerinas.openheadunit.BuildConfig.DEBUG || com.andrerinas.openheadunit.BuildConfig.BUILD_TYPE == "ce")
                 com.andrerinas.openheadunit.BuildConfig.APPLICATION_ID + ".permission.NAVIGATION_UPDATE"
             else NavigationUpdateIntent.BROADCAST_PERMISSION)
     }

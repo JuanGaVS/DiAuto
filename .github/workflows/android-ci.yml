@@ -60,7 +60,7 @@ jobs:
       # VpnControl.kt lives solely in app/src/github. When that source-set
       # split is fixed, add an assemblePlaystoreDebug build here.
       - name: Assemble github debug APK
-        run: ./gradlew :app:testGithubDebugUnitTest :app:assembleGithubDebug :app:assembleGithubRelease --stacktrace
+        run: ./gradlew :app:testGithubDebugUnitTest :app:assembleGithubDebug :app:assembleGithubRelease :app:assembleGithubCe --stacktrace
 
       - name: Upload debug APK
         if: always()
@@ -68,6 +68,14 @@ jobs:
         with:
           name: diauto-review-apk
           path: app/build/outputs/apk/github/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Upload DiAuto CE APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diauto-ce-apk
+          path: app/build/outputs/apk/github/ce/*.apk
           if-no-files-found: warn
 
   unit-test:
