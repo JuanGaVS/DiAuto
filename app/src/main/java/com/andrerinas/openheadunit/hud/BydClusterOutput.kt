@@ -14,7 +14,7 @@ internal class BydClusterOutput(private val context: Context, private val target
     companion object {
         const val DILINK3_PACKAGE = "com.example.amapservice"
         val PACKAGES = listOf("com.byd.amapservice", DILINK3_PACKAGE)
-        /** Shortest distance DiLink 3.0's HUD draws as a number (panel test 6d: 1 m and 5 m showed "现在", 10 m did not). */
+        /** Shortest distance DiLink 3.0's HUD draws as a number (on a test unit 1 m and 5 m showed "现在", 10 m did not). */
         const val DILINK3_MIN_DISTANCE_METERS = 10
 
         /**

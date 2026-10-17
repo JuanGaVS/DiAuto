@@ -93,8 +93,8 @@ object KeyCode {
 
         // BYD DiLink: a long press on the steering-wheel voice button reaches the foreground app as
         // KEYCODE_AUTO_MEDIA_VOICE_LP (312), a BYD framework keycode, while a short press stays with
-        // the BYD assistant. Factory Android Auto opens the phone assistant on that long press, so
-        // do the same. Gated to BYD because 312 is not a standard keycode on other head units.
+        // the BYD assistant. Map the long press to the phone assistant, like a dedicated voice key.
+        // Gated to BYD because 312 is not a standard keycode on other head units.
         if (keyCode == BYD_VOICE_LONG_PRESS && isByd)
             return KeyEvent.KEYCODE_SEARCH
 

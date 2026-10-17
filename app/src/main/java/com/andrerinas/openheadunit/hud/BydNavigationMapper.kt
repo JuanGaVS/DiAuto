@@ -67,12 +67,12 @@ internal object BydNavigationMapper {
         4 -> when(side) { 1 -> 7; 2 -> 8; else -> null }
         5 -> when(side) { 1 -> 9; 2 -> 10; else -> null }
         6 -> when(side) { 1 -> 11; 2 -> 12; else -> null }
-        11 -> 30
         12 -> 31
         // Legacy turn side does not establish roundabout circulation direction. With an exit
         // number, take the direction from the traffic-side setting so the exit reaches the cluster
-        // (enter-and-exit: 32 clockwise, 34 counter-clockwise); without one keep the generic icon.
-        13 -> if (roundaboutExit in 1..10) (if (leftHandTraffic) 32 else 34) else 30
+        // (enter-and-exit: 32 clockwise, 34 counter-clockwise), as DiPlay sends CarPlay's numbered
+        // roundabouts; without one keep the generic icon. An enter event can carry the number too.
+        11, 13 -> if (roundaboutExit in 1..10) (if (leftHandTraffic) 32 else 34) else 30
         14 -> 36
         16 -> 37
         17 -> 38
