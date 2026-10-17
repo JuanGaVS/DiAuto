@@ -106,7 +106,9 @@ class ConnectionSetupFragment : Fragment() {
                 })
                 text(box, getString(R.string.setup_auto_hotspot_hint), 16)
                 if (!granted) button(box, getString(R.string.setup_allow_automatic_hotspot_control)) {
-                    openSystem(Intent(SystemSettings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${requireContext().packageName}")))
+                    if (!AppPermissions.openWriteSettings(requireContext())) {
+                        Toast.makeText(requireContext(), getString(R.string.setup_open_settings_manually), Toast.LENGTH_LONG).show()
+                    }
                 }
                 text(box, if (granted) getString(R.string.setup_system_settings_access_allowed) else getString(R.string.setup_automatic_control_needs_permission), 15)
             }

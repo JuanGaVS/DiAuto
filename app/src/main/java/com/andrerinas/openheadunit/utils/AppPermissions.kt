@@ -156,6 +156,51 @@ object AppPermissions {
         return isActuallyGranted(context, AppOpsManager.OPSTR_WRITE_SETTINGS)
     }
 
+    /**
+     * Screens that can grant "Modify system settings", most direct first. Some head units drop the
+     * dedicated screen (BYD DiLink 3.0 resolves neither the per-app nor the list form), so the
+     * app's own info page, where stock Android lists the same switch, is the last resort.
+     */
+    fun writeSettingsIntents(context: Context): List<android.content.Intent> {
+        val pkg = android.net.Uri.parse("package:${context.packageName}")
+        return listOf(
+            android.content.Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, pkg),
+            android.content.Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS),
+            android.content.Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg),
+        )
+    }
+
+    /**
+     * Opens the first [writeSettingsIntents] screen that resolves and starts. Logs which of them
+     * this unit has, so a diagnostic report shows why the grant was not reachable. Returns false
+     * when none of them opened.
+     */
+    fun openWriteSettings(context: Context): Boolean {
+        val pm = context.packageManager
+        for (intent in writeSettingsIntents(context)) {
+            val target = pm.resolveActivity(intent, 0)?.activityInfo
+            val name = "${intent.action}${if (intent.data != null) " (this app)" else ""}"
+            if (target == null) {
+                AppLog.i("Write settings: no screen for $name")
+                continue
+            }
+            val started = runCatching {
+                // Like ConnectionSetupFragment.openSystem: BYD's settings app opens only from home.
+                if (target.packageName == "com.byd.carsettings") {
+                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_MAIN)
+                        .addCategory(android.content.Intent.CATEGORY_HOME).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+                context.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            if (started.isSuccess) {
+                AppLog.i("Write settings: opened $name -> ${target.packageName}/${target.name}")
+                return true
+            }
+            AppLog.w("Write settings: $name -> ${target.packageName}/${target.name} did not start: ${started.exceptionOrNull()}")
+        }
+        return false
+    }
+
     /** Fallback for some devices (especially headunits) where Settings#xx is unreliable */
     private fun isActuallyGranted(context: Context, opStr: String): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) return true
