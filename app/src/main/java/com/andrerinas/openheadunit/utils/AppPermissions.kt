@@ -158,17 +158,27 @@ object AppPermissions {
 
     /**
      * Screens that can grant "Modify system settings", most direct first. Some head units drop the
-     * dedicated screen (BYD DiLink 3.0 resolves neither the per-app nor the list form), so the
-     * app's own info page, where stock Android lists the same switch, is the last resort.
+     * dedicated screen: BYD DiLink 3.0 has no per-app form and sends the list form to its own
+     * "unsupported" page. Stock Settings may still ship the activities without the intent filter,
+     * so they are tried by name, and the app's own info page, where stock Android lists the same
+     * switch, is the last resort.
      */
     fun writeSettingsIntents(context: Context): List<android.content.Intent> {
         val pkg = android.net.Uri.parse("package:${context.packageName}")
+        fun stock(activity: String, data: android.net.Uri?) = android.content.Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, data)
+            .setClassName("com.android.settings", "com.android.settings.Settings\$$activity")
         return listOf(
             android.content.Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, pkg),
             android.content.Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS),
+            stock("AppWriteSettingsActivity", pkg),
+            stock("WriteSettingsActivity", null),
             android.content.Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg),
         )
     }
+
+    /** A vendor placeholder for a removed screen, such as BYD's com.byd.systemsettings.unsupport.UnsupportActivity. */
+    private fun isPlaceholder(activity: android.content.pm.ActivityInfo): Boolean =
+        activity.name.contains("unsupport", ignoreCase = true)
 
     /**
      * Opens the first [writeSettingsIntents] screen that resolves and starts. Logs which of them
@@ -179,9 +189,13 @@ object AppPermissions {
         val pm = context.packageManager
         for (intent in writeSettingsIntents(context)) {
             val target = pm.resolveActivity(intent, 0)?.activityInfo
-            val name = "${intent.action}${if (intent.data != null) " (this app)" else ""}"
+            val name = "${intent.component?.className ?: intent.action}${if (intent.data != null) " (this app)" else ""}"
             if (target == null) {
                 AppLog.i("Write settings: no screen for $name")
+                continue
+            }
+            if (isPlaceholder(target)) {
+                AppLog.i("Write settings: $name leads to a placeholder, ${target.packageName}/${target.name}")
                 continue
             }
             val started = runCatching {
