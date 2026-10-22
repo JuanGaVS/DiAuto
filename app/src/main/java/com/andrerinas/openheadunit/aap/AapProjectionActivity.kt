@@ -236,7 +236,13 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val now = SystemClock.elapsedRealtime()
         val action = WarmRelaunchKeyframePolicy.decide(
             sessionHasRendered = videoDecoder.hasRenderedThisSession,
-            renderedSinceSurfaceSet = videoDecoder.lastFrameRenderedMs != 0L,
+            // A picture, not just frames: a codec rebuilt mid-stream renders P-frames against no
+            // reference straight away, so on hardware decoders that output them (Qualcomm on BYD
+            // DiLink 3.0) "a frame rendered" read as repaired while the screen showed coloured
+            // streaks, and the cycle was never spent - the picture waited up to a minute for the
+            // phone's own keyframe after the driver came back from another app.
+            renderedSinceSurfaceSet = videoDecoder.lastFrameRenderedMs != 0L &&
+                videoDecoder.keyframeDecodedSinceStart,
             transportStarted = commManager.connectionState.value is CommManager.ConnectionState.TransportStarted,
             msSinceSurfaceSet = now - lastSurfaceSetMs,
             // The link, not the video channel. An idle Android Auto screen sends no video for
