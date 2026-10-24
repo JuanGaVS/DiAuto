@@ -251,7 +251,8 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             msSinceLinkActivity = linkQuietMs(),
             linkQuietThresholdMs = ProjectionWatchdogPolicy.LINK_QUIET_MS,
             cycleAlreadySpent = warmRelaunchCycleSpent,
-            msSinceLastRequest = now - lastVideoFocusRequestMs
+            msSinceLastRequest = now - lastVideoFocusRequestMs,
+            escalateAfterSurfaceMs = warmRelaunchWindowMs()
         )
         when (action) {
             WarmRelaunchKeyframePolicy.Action.NONE -> return
@@ -291,6 +292,11 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
      * the window itself.
      */
     private val warmRelaunchCheckRunnable = Runnable { maybeRecoverWarmRelaunch() }
+
+    /** Only the SurfaceView backend releases video focus when its surface goes away. */
+    private fun warmRelaunchWindowMs(): Long = WarmRelaunchKeyframePolicy.escalateAfterSurfaceMs(
+        teardownReleasesFocus = ::projectionView.isInitialized && projectionView is ProjectionView
+    )
 
     private var focusCycleGainPending = false
 
@@ -1542,10 +1548,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         lastSurfaceSetMs = SystemClock.elapsedRealtime()
         warmRelaunchCycleSpent = false
         watchdogHandler.removeCallbacks(warmRelaunchCheckRunnable)
-        watchdogHandler.postDelayed(
-            warmRelaunchCheckRunnable,
-            WarmRelaunchKeyframePolicy.ESCALATE_AFTER_SURFACE_MS
-        )
+        watchdogHandler.postDelayed(warmRelaunchCheckRunnable, warmRelaunchWindowMs())
 
         // --- Surface Mismatch Detection ---
         // Compare actual surface dimensions with what HeadUnitScreenConfig negotiated.
