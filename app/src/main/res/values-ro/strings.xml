@@ -264,6 +264,10 @@
     <string name="media_volume_offset">Ajustare volum media</string>
     <string name="assistant_volume_offset">Ajustare volum asistent</string>
     <string name="navigation_volume_offset">Ajustare volum navigație</string>
+    <string name="navigation_audio_stream">Flux audio pentru navigație</string>
+    <string name="navigation_audio_stream_automatic">Automat</string>
+    <string name="navigation_audio_stream_description">Fluxul audio Android pentru indicațiile de navigație (și vocea asistentului). Automat păstrează rutarea obișnuită. Valorile 1–20 aleg un ID de flux, inclusiv ieșirile proprii ale unității: pe BYD DiLink 3.0, 14 este canalul de navigație al mașinii, astfel indicațiile urmează volumul Navi. Atinge o valoare pentru a auzi un bip pe ea. Se aplică la următoarea conexiune. Nu se folosește cu Focus audio static.</string>
+    <string name="navigation_audio_stream_preview_unavailable">Această unitate nu poate reda o previzualizare pe fluxul %1$d.</string>
     <string name="mic_input_source">Sursa microfonului</string>
     <string name="mic_input_source_description">Alege de unde își ia microfonul sunetul.</string>
     <string-array name="mic_input_sources">

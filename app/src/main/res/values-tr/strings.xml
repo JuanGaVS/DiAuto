@@ -263,6 +263,10 @@
     <string name="media_volume_offset">Medya Ses Dengesi</string>
     <string name="assistant_volume_offset">Asistan Ses Dengesi</string>
     <string name="navigation_volume_offset">Navigasyon Ses Dengesi</string>
+    <string name="navigation_audio_stream">Navigasyon ses akışı</string>
+    <string name="navigation_audio_stream_automatic">Otomatik</string>
+    <string name="navigation_audio_stream_description">Navigasyon yönlendirmeleri (ve asistanın sesi) için Android ses akışı. Otomatik, olağan yönlendirmeyi korur. 1–20 değerleri, ana ünitenin kendi çıkışları dahil bir akış kimliği seçer: BYD DiLink 3.0\'da 14 aracın navigasyon kanalıdır, bu yüzden yönlendirmeler Navi ses düzeyini izler. Bir değere dokunarak üzerinde bip sesi duyun. Bir sonraki bağlantıda uygulanır. Statik Ses Odağı ile kullanılmaz.</string>
+    <string name="navigation_audio_stream_preview_unavailable">Bu ana ünite %1$d akışında önizleme çalamıyor.</string>
     <string name="mic_input_source">Mikrofon Giriş Kaynağı</string>
     <string name="mic_input_source_description">Mikrofon için ses kaynağını seçin.</string>
     <string-array name="mic_input_sources">

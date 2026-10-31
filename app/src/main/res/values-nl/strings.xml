@@ -244,6 +244,10 @@
     <string name="media_volume_offset">Media</string>
     <string name="assistant_volume_offset">Assistent</string>
     <string name="navigation_volume_offset">Navigatie</string>
+    <string name="navigation_audio_stream">Audiostream voor navigatie</string>
+    <string name="navigation_audio_stream_automatic">Automatisch</string>
+    <string name="navigation_audio_stream_description">De Android-audiostream voor navigatie-aanwijzingen (en de stem van de assistent). Automatisch houdt de gebruikelijke routering. Waarden 1–20 kiezen een stream-ID, ook eigen uitgangen van de headunit: op BYD DiLink 3.0 is 14 het navigatiekanaal van de auto, zodat aanwijzingen het Navi-volume volgen. Tik op een waarde om er een pieptoon op te horen. Geldt vanaf de volgende verbinding. Niet gebruikt met Statische audiofocus.</string>
+    <string name="navigation_audio_stream_preview_unavailable">Deze headunit kan geen voorbeeld afspelen op stream %1$d.</string>
     <string name="mic_input_source">Microfoon ingangsbron</string>
     <string name="mic_input_source_description">Kies de audiobron voor de microfoon.</string>
     <string-array name="mic_input_sources">
