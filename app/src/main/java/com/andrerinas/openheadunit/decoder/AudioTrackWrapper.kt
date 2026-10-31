@@ -375,24 +375,6 @@ class AudioTrackWrapper(
 
         AppLog.i("Audio stream: $stream buffer size: $bufferSize (min: $minBufferSize) sampleRateInHz: $sampleRateInHz channelCount: $channelCount")
 
-        // A vendor stream id (a user's "navigation audio stream" choice, such as BYD's 14) is
-        // not one AudioAttributes accepts, so it goes through the legacy constructor, which hands
-        // the id to the platform's audio policy as is. A unit that does not know the id leaves
-        // the track uninitialised; fall back to music rather than play nothing.
-        if (stream > AudioManager.STREAM_ACCESSIBILITY) {
-            @Suppress("DEPRECATION")
-            val vendor = runCatching {
-                AudioTrack(stream, sampleRateInHz, channelConfig, dataFormat, bufferSize, AudioTrack.MODE_STREAM)
-            }.getOrNull()
-            if (vendor != null && vendor.state == AudioTrack.STATE_INITIALIZED) {
-                AppLog.i("Audio stream: vendor stream $stream accepted")
-                return vendor
-            }
-            vendor?.release()
-            AppLog.w("Audio stream: vendor stream $stream rejected by this unit - playing on the music stream")
-            return createAudioTrack(AudioManager.STREAM_MUSIC, sampleRateInHz, bitDepth, channelCount, multiplier)
-        }
-
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val (usage, contentType) = when (stream) {
                 AudioManager.STREAM_NOTIFICATION -> Pair(

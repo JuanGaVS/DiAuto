@@ -850,13 +850,6 @@ class Settings(private val context: Context) {
         get() = prefs.getInt("assistant-volume-offset", 0)
         set(value) { prefs.edit().putInt("assistant-volume-offset", value).apply() }
 
-    // Android stream for the speech channel, which carries navigation prompts (and the
-    // assistant's replies). 0 keeps the automatic choice; 1-20 is a legacy stream id, including
-    // vendor ones such as BYD's navigation stream (14). Applies on the next connection.
-    var navigationAudioStream: Int
-        get() = prefs.getInt("navigation-audio-stream", 0)
-        set(value) { prefs.edit().putInt("navigation-audio-stream", value).apply() }
-
     var navigationVolumeOffset: Int
         get() = prefs.getInt("navigation-volume-offset", 0)
         set(value) { prefs.edit().putInt("navigation-volume-offset", value).apply() }

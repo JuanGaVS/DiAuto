@@ -27,7 +27,6 @@ internal class AapAudio(
     private val mediaVolumeOffset = settings.mediaVolumeOffset
     private val assistantVolumeOffset = settings.assistantVolumeOffset
     private val navigationVolumeOffset = settings.navigationVolumeOffset
-    private val navigationAudioStream = settings.navigationAudioStream
     private val audioLatencyMultiplier = settings.audioLatencyMultiplier
     private val useAacAudio = settings.useAacAudio
     private val audioQueueCapacity = settings.audioQueueCapacity
@@ -286,13 +285,7 @@ internal class AapAudio(
         if (audioDecoder.getTrack(channel) != null) return
 
         val config = AudioConfigs.get(channel)
-        // Navigation prompts arrive on the speech channel (AU1), not on AU2, which is system sound.
-        val stream = if (channel == Channel.ID_AU1 && navigationAudioStream != 0) {
-            if (staticAudioFocus) AppLog.w("Navigation audio stream $navigationAudioStream ignored: static audio focus mixes every channel into one track")
-            navigationAudioStream
-        } else {
-            AudioConfigs.stream(channel, separateAudioStreams)
-        }
+        val stream = AudioConfigs.stream(channel, separateAudioStreams)
 
         val offset = when (channel) {
             Channel.ID_AUD -> mediaVolumeOffset
