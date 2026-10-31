@@ -109,6 +109,7 @@ class SettingsFragment : Fragment() {
     private var pendingStaticAudioFocus: Boolean? = null
     private var pendingPlaybackFocusMode: PlaybackFocusPolicy.Mode? = null
     private var pendingSeparateAudioStreams: Boolean? = null
+    private var pendingNavigationAudioStream: Int? = null
     private var pendingUseAacAudio: Boolean? = null
     private var pendingAttachHwDspEqualizer: Boolean? = null
     private var pendingMicInputSource: Int? = null
@@ -244,6 +245,7 @@ class SettingsFragment : Fragment() {
         pendingStaticAudioFocus = settings.staticAudioFocus
         pendingPlaybackFocusMode = settings.playbackFocusMode
         pendingSeparateAudioStreams = settings.separateAudioStreams
+        pendingNavigationAudioStream = settings.navigationAudioStream
         pendingUseAacAudio = settings.useAacAudio
         pendingAttachHwDspEqualizer = settings.attachHwDspEqualizer
         pendingMicInputSource = settings.micInputSource
@@ -367,6 +369,7 @@ class SettingsFragment : Fragment() {
         pendingStaticAudioFocus = settings.staticAudioFocus
         pendingPlaybackFocusMode = settings.playbackFocusMode
         pendingSeparateAudioStreams = settings.separateAudioStreams
+        pendingNavigationAudioStream = settings.navigationAudioStream
         pendingUseAacAudio = settings.useAacAudio
         pendingAttachHwDspEqualizer = settings.attachHwDspEqualizer
         pendingEnableRotary = settings.enableRotary
@@ -500,6 +503,7 @@ class SettingsFragment : Fragment() {
         pendingStaticAudioFocus?.let { settings.staticAudioFocus = it }
         pendingPlaybackFocusMode?.let { settings.playbackFocusMode = it }
         pendingSeparateAudioStreams?.let { settings.separateAudioStreams = it }
+        pendingNavigationAudioStream?.let { settings.navigationAudioStream = it }
         pendingUseAacAudio?.let { settings.useAacAudio = it }
         pendingAttachHwDspEqualizer?.let { settings.attachHwDspEqualizer = it }
         pendingMicInputSource?.let { settings.micInputSource = it }
@@ -600,6 +604,17 @@ class SettingsFragment : Fragment() {
         }
     }
 
+    /** A short beep on [stream], so a driver can hear which output a stream id reaches. */
+    private fun previewAudioStream(stream: Int) {
+        val tone = runCatching { android.media.ToneGenerator(stream, 90) }.getOrNull()
+        if (tone == null) {
+            Toast.makeText(requireContext(), getString(R.string.navigation_audio_stream_preview_unavailable, stream), Toast.LENGTH_SHORT).show()
+            return
+        }
+        tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 400)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ tone.release() }, 800)
+    }
+
     private fun checkChanges() {
         // Check for any changes
         val anyChange = pendingUseGps != settings.useGpsForNavigation ||
@@ -631,6 +646,7 @@ class SettingsFragment : Fragment() {
                         pendingStaticAudioFocus != settings.staticAudioFocus ||
                         pendingPlaybackFocusMode != settings.playbackFocusMode ||
                         pendingSeparateAudioStreams != settings.separateAudioStreams ||
+                        pendingNavigationAudioStream != settings.navigationAudioStream ||
                         pendingUseAacAudio != settings.useAacAudio ||
                         pendingAttachHwDspEqualizer != settings.attachHwDspEqualizer ||
                         pendingMicInputSource != settings.micInputSource ||
@@ -686,6 +702,7 @@ class SettingsFragment : Fragment() {
                           pendingStaticAudioFocus != settings.staticAudioFocus ||
                           pendingPlaybackFocusMode != settings.playbackFocusMode ||
                           pendingSeparateAudioStreams != settings.separateAudioStreams ||
+                          pendingNavigationAudioStream != settings.navigationAudioStream ||
                           pendingUseAacAudio != settings.useAacAudio ||
                           pendingAttachHwDspEqualizer != settings.attachHwDspEqualizer ||
                           pendingAudioLatencyMultiplier != settings.audioLatencyMultiplier ||
@@ -1873,6 +1890,35 @@ class SettingsFragment : Fragment() {
                 checkChanges()
                 updateSettingsList()
             }
+        ))
+
+        items.add(SettingItem.SettingEntry(
+            stableId = "navigationAudioStream",
+            nameResId = R.string.navigation_audio_stream,
+            value = (pendingNavigationAudioStream ?: 0).let {
+                if (it == 0) getString(R.string.navigation_audio_stream_automatic) else it.toString()
+            },
+            onClick = { _ ->
+                val values = (0..20).toList()
+                val options = values.map {
+                    if (it == 0) getString(R.string.navigation_audio_stream_automatic) else it.toString()
+                }.toTypedArray()
+                val currentIndex = values.indexOf(pendingNavigationAudioStream ?: 0).coerceAtLeast(0)
+                AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.navigation_audio_stream)
+                    .setSingleChoiceItems(options, currentIndex) { _, which ->
+                        pendingNavigationAudioStream = values[which]
+                        if (values[which] != 0) previewAudioStream(values[which])
+                        checkChanges()
+                        updateSettingsList()
+                    }
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+            }
+        ))
+        items.add(SettingItem.InfoBanner(
+            stableId = "navigationAudioStreamHint",
+            textResId = R.string.navigation_audio_stream_description
         ))
 
         items.add(SettingItem.ToggleSettingEntry(

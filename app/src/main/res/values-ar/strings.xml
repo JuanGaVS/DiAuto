@@ -245,6 +245,10 @@
     <string name="media_volume_offset">تعويض مستوى صوت الوسائط</string>
     <string name="assistant_volume_offset">تعويض مستوى صوت المساعد</string>
     <string name="navigation_volume_offset">تعويض مستوى صوت الملاحة</string>
+    <string name="navigation_audio_stream">مسار صوت الملاحة</string>
+    <string name="navigation_audio_stream_automatic">تلقائي</string>
+    <string name="navigation_audio_stream_description">مسار صوت Android لتنبيهات الملاحة (وصوت المساعد). «تلقائي» يُبقي التوجيه المعتاد. القيم 1–20 تختار رقم مسار، بما في ذلك مخارج الشاشة الخاصة: في BYD DiLink 3.0 يكون 14 قناة الملاحة في السيارة، فتتبع التنبيهات مستوى صوت Navi. انقر على قيمة لسماع صفارة عليها. يُطبَّق عند الاتصال التالي. لا يُستخدم مع تركيز الصوت الثابت.</string>
+    <string name="navigation_audio_stream_preview_unavailable">لا تستطيع هذه الشاشة تشغيل معاينة على المسار %1$d.</string>
     <string name="mic_input_source">مصدر إدخال الميكروفون</string>
     <string name="mic_input_source_description">اختر مصدر الصوت للميكروفون.</string>
     <string-array name="mic_input_sources">
