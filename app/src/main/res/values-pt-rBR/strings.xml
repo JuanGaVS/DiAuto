@@ -245,10 +245,6 @@
     <string name="media_volume_offset">Multimídia</string>
     <string name="assistant_volume_offset">Assistente</string>
     <string name="navigation_volume_offset">Navegação</string>
-    <string name="navigation_audio_stream">Fluxo de áudio da navegação</string>
-    <string name="navigation_audio_stream_automatic">Automático</string>
-    <string name="navigation_audio_stream_description">O fluxo de áudio do Android para as instruções de navegação (e a voz do assistente). Automático mantém o roteamento habitual. Os valores 1–20 escolhem um ID de fluxo, incluindo saídas próprias da central: no BYD DiLink 3.0, 14 é o canal de navegação do carro, então as instruções seguem o volume Navi. Toque em um valor para ouvir um bipe nele. Aplica-se na próxima conexão. Não é usado com Foco de áudio estático.</string>
-    <string name="navigation_audio_stream_preview_unavailable">Esta central não consegue tocar uma prévia no fluxo %1$d.</string>
     <string name="mic_input_source">Fonte de entrada do microfone</string>
     <string name="mic_input_source_description">Escolha a fonte de áudio para o microfone.</string>
     <string-array name="mic_input_sources">

@@ -271,10 +271,6 @@
     <string name="media_volume_offset">მედიის ხმის ოფსეტი</string>
     <string name="assistant_volume_offset">ასისტენტის ხმის ოფსეტი</string>
     <string name="navigation_volume_offset">ნავიგაციის ხმის ოფსეტი</string>
-    <string name="navigation_audio_stream">ნავიგაციის აუდიო ნაკადი</string>
-    <string name="navigation_audio_stream_automatic">ავტომატური</string>
-    <string name="navigation_audio_stream_description">Android-ის აუდიო ნაკადი ნავიგაციის მითითებებისთვის (და ასისტენტის ხმისთვის). „ავტომატური“ ინარჩუნებს ჩვეულ მარშრუტიზაციას. მნიშვნელობები 1–20 ირჩევს ნაკადის ნომერს, მათ შორის მოწყობილობის საკუთარ გამოსავლებს: BYD DiLink 3.0-ზე 14 არის მანქანის ნავიგაციის არხი, ამიტომ მითითებები მიჰყვება Navi-ს ხმას. შეეხეთ მნიშვნელობას, რომ მოისმინოთ სიგნალი. მოქმედებს შემდეგი დაკავშირებიდან. არ გამოიყენება სტატიკურ აუდიო ფოკუსთან ერთად.</string>
-    <string name="navigation_audio_stream_preview_unavailable">ამ მოწყობილობას არ შეუძლია ნიმუშის დაკვრა ნაკადზე %1$d.</string>
     <string name="microphone_settings">მიკროფონის პარამეტრები</string>
     <string name="microphone_settings_description">მიკროფონის შეყვანისა და აუდიო დამუშავების კონფიგურაცია.</string>
     <string name="mic_input_source">მიკროფონის შეყვანის წყარო</string>

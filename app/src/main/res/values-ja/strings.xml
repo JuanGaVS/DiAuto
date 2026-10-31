@@ -268,10 +268,6 @@
     <string name="media_volume_offset">メディアボリュームオフセット</string>
     <string name="assistant_volume_offset">アシスタントボリュームオフセット</string>
     <string name="navigation_volume_offset">ナビゲーションボリュームオフセット</string>
-    <string name="navigation_audio_stream">ナビ音声ストリーム</string>
-    <string name="navigation_audio_stream_automatic">自動</string>
-    <string name="navigation_audio_stream_description">ナビ案内（およびアシスタントの音声）に使う Android の音声ストリームです。「自動」は通常のルーティングのままです。1～20 はストリーム ID を選び、ヘッドユニット独自の出力も指定できます。BYD DiLink 3.0 では 14 が車のナビ用チャンネルで、案内は Navi の音量に従います。値をタップするとそのストリームでビープ音が鳴ります。次回の接続から適用されます。静的オーディオフォーカスでは使用されません。</string>
-    <string name="navigation_audio_stream_preview_unavailable">このヘッドユニットではストリーム %1$d でプレビューを再生できません。</string>
     <string name="mic_input_source">マイク入力ソース</string>
     <string name="mic_input_source_description">マイクの音声ソースを選択します。</string>
     <string-array name="mic_input_sources">

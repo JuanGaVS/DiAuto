@@ -472,10 +472,10 @@
     <string name="media_volume_offset">Media Volume Offset</string>
     <string name="assistant_volume_offset">Assistant Volume Offset</string>
     <string name="navigation_volume_offset">Navigation Volume Offset</string>
-    <string name="navigation_audio_stream">Navigation audio stream</string>
-    <string name="navigation_audio_stream_automatic">Automatic</string>
-    <string name="navigation_audio_stream_description">The Android audio stream for navigation prompts (and the assistant\'s voice). Automatic keeps the usual routing. Values 1–20 pick a stream id, including the head unit\'s own outputs: on BYD DiLink 3.0, 14 is the car\'s navigation channel, so prompts follow its Navi volume. Tap a value to hear a beep on it. Applies on the next connection. Not used with Static Audio Focus.</string>
-    <string name="navigation_audio_stream_preview_unavailable">This head unit cannot play a preview on stream %1$d.</string>
+    <string name="navigation_audio_stream" translatable="false">Navigation audio stream</string>
+    <string name="navigation_audio_stream_automatic" translatable="false">Automatic</string>
+    <string name="navigation_audio_stream_description" translatable="false">The Android audio stream for navigation prompts (and the assistant\'s voice). Automatic keeps the usual routing. Values 1–20 pick a stream id, including the head unit\'s own outputs: on some BYD units 14 is the car\'s navigation channel, so prompts follow its navigation volume. Tap a value to hear a beep on it. Applies on the next connection. Not used with Static Audio Focus.</string>
+    <string name="navigation_audio_stream_preview_unavailable" translatable="false">This head unit cannot play a preview on stream %1$d.</string>
     <string name="microphone_settings">Microphone Settings</string>
     <string name="microphone_settings_description">Configure microphone input and audio processing.</string>
     <string name="mic_input_source">Microphone Input Source</string>

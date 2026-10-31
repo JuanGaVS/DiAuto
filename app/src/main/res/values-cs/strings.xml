@@ -245,10 +245,6 @@
     <string name="media_volume_offset">Média</string>
     <string name="assistant_volume_offset">Asistent</string>
     <string name="navigation_volume_offset">Navigace</string>
-    <string name="navigation_audio_stream">Zvukový proud navigace</string>
-    <string name="navigation_audio_stream_automatic">Automaticky</string>
-    <string name="navigation_audio_stream_description">Zvukový proud Androidu pro navigační pokyny (a hlas asistenta). Automaticky ponechá obvyklé směrování. Hodnoty 1–20 vyberou číslo proudu, včetně vlastních výstupů jednotky: v BYD DiLink 3.0 je 14 navigační kanál vozu, takže pokyny se řídí jeho hlasitostí Navi. Klepnutím na hodnotu přehrajete pípnutí. Projeví se při dalším připojení. Nepoužívá se se Statickým zaměřením zvuku.</string>
-    <string name="navigation_audio_stream_preview_unavailable">Tato jednotka nemůže přehrát ukázku na proudu %1$d.</string>
     <string name="mic_input_source">Zdroj vstupu mikrofonu</string>
     <string name="mic_input_source_description">Vyberte zdroj zvuku pro mikrofon.</string>
     <string-array name="mic_input_sources">

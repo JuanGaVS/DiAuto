@@ -280,10 +280,6 @@
     <string name="media_volume_offset">미디어 볼륨 보정</string>
     <string name="assistant_volume_offset">어시스턴트 볼륨 보정</string>
     <string name="navigation_volume_offset">내비게이션 볼륨 보정</string>
-    <string name="navigation_audio_stream">내비게이션 오디오 스트림</string>
-    <string name="navigation_audio_stream_automatic">자동</string>
-    <string name="navigation_audio_stream_description">내비게이션 안내(및 어시스턴트 음성)에 사용할 Android 오디오 스트림입니다. 자동은 기존 라우팅을 유지합니다. 1~20은 스트림 ID를 선택하며 헤드유닛 고유 출력도 포함됩니다. BYD DiLink 3.0에서는 14가 차량의 내비게이션 채널이므로 안내가 Navi 볼륨을 따릅니다. 값을 탭하면 해당 스트림에서 신호음이 울립니다. 다음 연결부터 적용됩니다. 오디오 포커스 고정과 함께 사용되지 않습니다.</string>
-    <string name="navigation_audio_stream_preview_unavailable">이 헤드유닛은 스트림 %1$d에서 미리 듣기를 재생할 수 없습니다.</string>
     <string name="microphone_settings">마이크 설정</string>
     <string name="microphone_settings_description">마이크 입력 및 오디오 처리를 설정합니다.</string>
     <string name="mic_input_source">마이크 입력 소스</string>

@@ -245,10 +245,6 @@
     <string name="media_volume_offset">Multimedia</string>
     <string name="assistant_volume_offset">Asystent</string>
     <string name="navigation_volume_offset">Nawigacja</string>
-    <string name="navigation_audio_stream">Strumień audio nawigacji</string>
-    <string name="navigation_audio_stream_automatic">Automatycznie</string>
-    <string name="navigation_audio_stream_description">Strumień audio Androida dla komunikatów nawigacji (i głosu asystenta). Automatycznie zachowuje zwykłe kierowanie. Wartości 1–20 wybierają numer strumienia, także własne wyjścia jednostki: w BYD DiLink 3.0 14 to kanał nawigacji samochodu, więc komunikaty podążają za głośnością Navi. Dotknij wartości, aby usłyszeć na niej sygnał. Działa od następnego połączenia. Nie jest używane ze Statycznym skupieniem dźwięku.</string>
-    <string name="navigation_audio_stream_preview_unavailable">Ta jednostka nie może odtworzyć próbki na strumieniu %1$d.</string>
     <string name="mic_input_source">Źródło wejściowe mikrofonu</string>
     <string name="mic_input_source_description">Wybierz źródło dźwięku dla mikrofonu.</string>
     <string-array name="mic_input_sources">

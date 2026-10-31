@@ -245,10 +245,6 @@
     <string name="media_volume_offset">Медіа</string>
     <string name="assistant_volume_offset">Асистент</string>
     <string name="navigation_volume_offset">Навігація</string>
-    <string name="navigation_audio_stream">Аудіопотік навігації</string>
-    <string name="navigation_audio_stream_automatic">Автоматично</string>
-    <string name="navigation_audio_stream_description">Аудіопотік Android для підказок навігації (і голосу асистента). «Автоматично» зберігає звичайну маршрутизацію. Значення 1–20 обирають номер потоку, зокрема власні виходи магнітоли: на BYD DiLink 3.0 потік 14 — канал навігації авто, тож підказки слідують гучності Navi. Торкніться значення, щоб почути на ньому сигнал. Застосовується під час наступного підключення. Не використовується зі Статичним аудіофокусом.</string>
-    <string name="navigation_audio_stream_preview_unavailable">Ця магнітола не може відтворити пробний сигнал на потоці %1$d.</string>
     <string name="mic_input_source">Джерело мікрофона</string>
     <string name="mic_input_source_description">Виберіть джерело звуку для мікрофона.</string>
     <string-array name="mic_input_sources">

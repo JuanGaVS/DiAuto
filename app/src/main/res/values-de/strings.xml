@@ -274,10 +274,6 @@
     <string name="media_volume_offset">Medien-Lautstärke</string>
     <string name="assistant_volume_offset">Assistenten-Lautstärke</string>
     <string name="navigation_volume_offset">Navigations-Lautstärke</string>
-    <string name="navigation_audio_stream">Audiostream für Navigation</string>
-    <string name="navigation_audio_stream_automatic">Automatisch</string>
-    <string name="navigation_audio_stream_description">Der Android-Audiostream für Navigationsansagen (und die Stimme des Assistenten). Automatisch behält das übliche Routing bei. Die Werte 1–20 wählen eine Stream-ID, auch eigene Ausgänge des Head Units: Bei BYD DiLink 3.0 ist 14 der Navigationskanal des Autos, sodass Ansagen seiner Navi-Lautstärke folgen. Tippe auf einen Wert, um darauf einen Piepton zu hören. Gilt ab der nächsten Verbindung. Wird mit Statischer Audio-Fokus nicht verwendet.</string>
-    <string name="navigation_audio_stream_preview_unavailable">Dieses Head Unit kann auf Stream %1$d keine Vorschau abspielen.</string>
     <string name="microphone_settings">Mikrofon-Einstellungen</string>
     <string name="microphone_settings_description">Eingangsquelle und Audio-Verarbeitung konfigurieren.</string>
     <string name="mic_input_source">Mikrofon-Eingangsquelle</string>

@@ -268,10 +268,6 @@
     <string name="media_volume_offset">Offset volume media</string>
     <string name="assistant_volume_offset">Offset volume assistente</string>
     <string name="navigation_volume_offset">Offset volume navigazione</string>
-    <string name="navigation_audio_stream">Flusso audio della navigazione</string>
-    <string name="navigation_audio_stream_automatic">Automatico</string>
-    <string name="navigation_audio_stream_description">Il flusso audio Android per le indicazioni di navigazione (e la voce dell\'assistente). Automatico mantiene l\'instradamento abituale. I valori 1–20 scelgono un ID di flusso, comprese le uscite proprie dell\'unità: su BYD DiLink 3.0 il 14 è il canale di navigazione dell\'auto, quindi le indicazioni seguono il suo volume Navi. Tocca un valore per sentire un bip. Si applica alla connessione successiva. Non usato con Focus audio statico.</string>
-    <string name="navigation_audio_stream_preview_unavailable">Questa unità non può riprodurre un\'anteprima sul flusso %1$d.</string>
     <string name="mic_input_source">Sorgente ingresso microfono</string>
     <string name="mic_input_source_description">Scegli la sorgente audio per il microfono.</string>
     <string-array name="mic_input_sources">

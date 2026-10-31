@@ -261,10 +261,6 @@
     <string name="media_volume_offset">Bù âm lượng nhạc</string>
     <string name="assistant_volume_offset">Bù âm lượng trợ lý</string>
     <string name="navigation_volume_offset">Bù âm lượng điều hướng</string>
-    <string name="navigation_audio_stream">Luồng âm thanh dẫn đường</string>
-    <string name="navigation_audio_stream_automatic">Tự động</string>
-    <string name="navigation_audio_stream_description">Luồng âm thanh Android cho lời nhắc dẫn đường (và giọng trợ lý). Tự động giữ cách định tuyến thông thường. Giá trị 1–20 chọn một mã luồng, gồm cả các đầu ra riêng của màn hình: trên BYD DiLink 3.0, 14 là kênh dẫn đường của xe nên lời nhắc theo âm lượng Navi. Chạm vào một giá trị để nghe tiếng bíp trên đó. Áp dụng ở lần kết nối tiếp theo. Không dùng với Audio Focus tĩnh.</string>
-    <string name="navigation_audio_stream_preview_unavailable">Màn hình này không thể phát thử trên luồng %1$d.</string>
     <string name="microphone_settings">Cài đặt micro</string>
     <string name="microphone_settings_description">Cấu hình đầu vào micro và xử lý âm thanh.</string>
     <string name="mic_input_source">Nguồn vào micro</string>
